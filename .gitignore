@@ -4,3 +4,5 @@
 *.ptx
 *.cubin
 *.fatbin
+nv_*
+cpp_*
