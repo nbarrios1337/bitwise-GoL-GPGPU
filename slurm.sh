@@ -1,15 +1,21 @@
 #!/bin/sh
-#SBATCH --partition=general-compute --qos=general-compute
-#SBATCH --time=72:00:00
-#SBATCH --nodes=1 --gres=gpu:1 --constraint=V100
+
+# General SLURM Specs
+#SBATCH --partition=general-compute 
+#SBATCH --qos=general-compute
+#Specifies that we want exclusive access to the nodes we choose
+#SBATCH --exclusive
+#SBATCH --account=jzola
+#SBATCH --time=00:10:00
+
+# CUDA Specific Specs
+# Need a node with a GPU
+#SBATCH --nodes=1 
+#SBATCH --gres=gpu:1
+#SBATCH --constraint=V100
+
+# tasks per node I'm not sure we need
 #SBATCH --ntasks-per-node=8
-#SBATCH --job-name="gol_test"
-#SBATCH --output=test-gol.out
-#SBATCH --mail-user=muhanned@buffalo.edu
-#SBATCH --mail-type=ALL
-##SBATCH --requeue
-#Specifies that the job will be requeued after a node failure.
-#The default is that the job will not be requeued.
 
 echo "SLURM_JOBID="$SLURM_JOBID
 echo "SLURM_JOB_NODELIST"=$SLURM_JOB_NODELIST
@@ -25,7 +31,7 @@ ulimit -s unlimited
 #Initial srun will trigger the SLURM prologue on the compute nodes.
 NPROCS=`srun --nodes=${SLURM_NNODES} bash -c 'hostname' |wc -l`
 echo NPROCS=$NPROCS
-echo "Launch gol-cuda"
-./gol-cuda
+echo "Launch $1"
+$1
 
 echo "All Done!"

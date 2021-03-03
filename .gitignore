@@ -6,3 +6,5 @@
 *.fatbin
 nv_*
 cpp_*
+bin/*
+output/*
