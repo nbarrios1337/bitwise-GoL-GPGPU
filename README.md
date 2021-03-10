@@ -9,6 +9,9 @@ In order to submit a batch job for a *.cu file:
 2. Make sure to run `make` or `make init` to ensure you have all directories set up
 3. Run `make nv_<file>` where `<file>` is the name of the source file without the file extension.
 
+In order to use the debug cluster on CCR, pass `debug=true` to make. For example:
+- `make nv_example debug=true`
+
 ## Environment Setup
 Modules: (use `module load`)
 - cuda/11.0
