@@ -4,6 +4,14 @@ init:
 
 all: init
 
+debug=false
+
+ifeq ($(debug), true)
+SCRIPT=debug.sh
+else
+SCRIPT=slurm.sh
+endif
+
 # ~~~ CUDA Rules ~~~
 NVCXX := nvcc
 CXXFLAGS := -Wall -Wextra -std=c++11
@@ -30,11 +38,14 @@ nv_%: bin/nv_%
 	sbatch	--job-name=`basename $^`			\
 			--output=output/`basename $^`-%j.out	\
 			--error=output/`basename $^`-%j.err	\
-			slurm.sh $^
+			$(SCRIPT) $^
 
 # Remove files based on what git ignores
 clean:
 	cat .gitignore | xargs -I _ find -name _ | xargs rm -vf
+
+cancel:
+	scancel --user $$USER
 
 # Necessary to keep the binaries after using the
 # bin/nv_% rule as an intermediate rule
