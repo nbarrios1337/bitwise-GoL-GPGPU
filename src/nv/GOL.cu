@@ -72,8 +72,8 @@ int main(int argc, char* argv[])
     int* d_newGrid; //Second grid used on device only
     int* d_tmpGrid; //tmp grid pointer used to switch between grid and newGrid
  
-    int dim = 1024; //Linear dimension of our grid - not counting ghost cells
-    int maxIter = 1<<10; //Number of game steps
+    int dim = 1<<6; //Linear dimension of our grid - not counting ghost cells
+    int maxIter = 1<<3; //Number of game steps
  
     size_t bytes = sizeof(int)*(dim+2)*(dim+2);//2 added for periodic boundary condition ghost cells
     // Allocate host Grid used for initial setup and read back from device
@@ -113,6 +113,18 @@ int main(int argc, char* argv[])
         d_tmpGrid = d_grid;
         d_grid = d_newGrid;
         d_newGrid = d_tmpGrid;
+
+        // send back to CPU
+        cudaMemcpy(h_grid, d_grid, bytes, cudaMemcpyDeviceToHost);
+        // CPU print grid
+        for (i = 1; i<=dim; i++) {
+            for (j = 1; j<=dim; j++) {
+                char c = h_grid[i*(dim+2)+j] == 1 ? 'x' : ' ';
+                printf("%c", c);
+            }
+            printf("\n");
+        }
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
     }//iter loop
  
     // Copy back results and sum
