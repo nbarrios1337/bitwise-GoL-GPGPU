@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
         ghostCols<<<cpyGridColsGridSize, cpyBlockSize>>>(dim, d_grid);
         //GOL<<<gridSize, blockSize>>>(dim, d_grid, d_newGrid);
         bitLifeKernelNoLookup<<<gridSize, blockSize>>>(d_grid, dim,
-           dim, 4, d_newgrid);;
+           dim, 4, d_newgrid);
         // Swap our grids and iterate again
         d_tmpGrid = d_grid;
         d_grid = d_newGrid;
