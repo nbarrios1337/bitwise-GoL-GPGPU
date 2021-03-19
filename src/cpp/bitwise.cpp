@@ -4,7 +4,7 @@ using std::bitset;
 #include <iostream>
 #include <vector>
 
-#define SIZE 8
+#define SIZE 16
 #define LIVE 1
 #define DEAD 0
 
@@ -86,9 +86,32 @@ bitset<SIZE> computeNextState(bitset<SIZE + 2> top, bitset<SIZE + 2> middle,
     }
     std::cout << std::endl;
 
+    // s0 to s8, all set to 000...000
+    bitset<SIZE> sumBits[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
+    // set the i-th MSB of the bitset for the value read
+    // i.e. with 3_5_553345, sets the 2nd bit of s5
+    // since indexing is 0-7, we need to offset indexing sumBits
+    for(int i = 0; i < SIZE; i++){
+        std::cout << "Looking at the " << i << "th sum (" << neighbors[i] << ")" << std::endl;
+        // no way to have more than 8 neighbors
+        if (neighbors[i] < 8){
+            sumBits[neighbors[i]-1].set(SIZE-1-i);
+        }
+    }
 
-    return bitset<SIZE>();
+    std::cout << "N:  ";
+    for (auto i : neighbors) {
+        std::cout << i;
+    }
+    std::cout << std::endl;
+
+    for (int i = 0; i < 8; i++){
+        std::cout << "s" << i+1 << ": " << sumBits[i] << std::endl;
+    }
+
+    // (center & s2) | s3
+    return (mid & sumBits[1]) | sumBits[2];
 }
 
 int main() {
@@ -155,6 +178,7 @@ int main() {
     std::cout << std::endl;
     
     std::cout << "computeState\t" << next << std::endl;
+    std::cout << "NaiveCompare\t" << test << std::endl;
 
     return 0;
 }
