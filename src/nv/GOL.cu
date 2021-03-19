@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstdint>
+#define ubyte uint8_t
 
 #define SRAND_VALUE 1985
 #define BLOCK_SIZE 16
 
-__global__ void ghostRows(int dim, int *grid)
+__global__ void ghostRows(int dim, uint8_t *grid)
 {
     // We want id ∈ [1,dim]
     int id = blockDim.x * blockIdx.x + threadIdx.x + 1;
@@ -18,7 +20,7 @@ __global__ void ghostRows(int dim, int *grid)
     }
 }
 
-__global__ void ghostCols(int dim, int *grid)
+__global__ void ghostCols(int dim, uint8_t *grid)
 {
     // We want id ∈ [0,dim+1]
     int id = blockDim.x * blockIdx.x + threadIdx.x;
@@ -124,6 +126,7 @@ int main(int argc, char* argv[])
     ubyte* d_tmpGrid; //tmp grid pointer used to switch between grid and newGrid
 
     uint dim = 1024; //Linear dimension of our grid - not counting ghost cells
+    //reduce to like 1<<4 or 1<<5 to run it reasonably on Pascal 1060
     int maxIter = 1<<10; //Number of game steps
 
     size_t bytes = sizeof(int)*(dim+2)*(dim+2);//2 added for periodic boundary condition ghost cells
@@ -160,7 +163,7 @@ int main(int argc, char* argv[])
         ghostCols<<<cpyGridColsGridSize, cpyBlockSize>>>(dim, d_grid);
         //GOL<<<gridSize, blockSize>>>(dim, d_grid, d_newGrid);
         bitLifeKernelNoLookup<<<gridSize, blockSize>>>(d_grid, dim,
-           dim, 4, d_newgrid);
+           dim, 4, d_newGrid);
         // Swap our grids and iterate again
         d_tmpGrid = d_grid;
         d_grid = d_newGrid;
