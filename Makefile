@@ -12,17 +12,22 @@ else
 SCRIPT=slurm.sh
 endif
 
+INCLUDE_DIR=includes/
+
 # ~~~ Local vs CCR ~~~
 # The CCR variable remains undefined if
 # the `sbatch` command is not found
 CCR := $(shell command -v sbatch 2> /dev/null)
+
+# ~~~ Specific Requirements ~~~
+bin/cpp_bitwise_test: src/cpp/bitwise.cpp
 
 # ~~~ CUDA Rules ~~~
 NVCXX := nvcc
 CXXFLAGS := -Wall -Wextra -std=c++11
 
 bin/nv_%: src/nv/%.cu
-	$(NVCXX) $^ -o $@ --forward-unknown-to-host-compiler $(CXXFLAGS)
+	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) --forward-unknown-to-host-compiler $(CXXFLAGS)
 
 # ~~~ C++ Rules ~~~
 # nvcc can compile C++ code, some fun was had
@@ -33,7 +38,7 @@ bin/nv_%: src/nv/%.cu
 # CXX := g++
 
 bin/cpp_%: src/cpp/%.cpp
-	$(NVCXX) $^ -o $@ --forward-unknown-to-host-compiler $(CXXFLAGS)
+	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) --forward-unknown-to-host-compiler $(CXXFLAGS)
 
 # ~~~ Generic Rules ~~~
 cpp_%: bin/cpp_%
