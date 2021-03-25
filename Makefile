@@ -51,9 +51,8 @@ nv_%: bin/nv_%
 			$(SCRIPT) $^
 endif
 
-# Remove files based on what git ignores
 clean:
-	cat .gitignore | xargs -I _ find -name _ | xargs rm -vf
+	rm -vf bin/* output/*
 
 cancel:
 	scancel --user $$USER
