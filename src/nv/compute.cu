@@ -114,7 +114,6 @@ uint32_t wrapper(uint64_t t, uint64_t m, uint64_t b) {
     uint32_t *bitsets, *out;
 
     cudaMallocManaged(&bitsets, 9 * sizeof(uint32_t));
-    //cudaMemset(bitsets, 0, 9);
     cudaMallocManaged(&out, sizeof(uint32_t));
 
     next_gen<<<1, 1>>>(out, bitsets, t, m, b);

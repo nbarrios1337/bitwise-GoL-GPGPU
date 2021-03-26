@@ -15,20 +15,19 @@ int main() {
         test[i - 1] = middle[i];
     }
 
-    #ifdef DEBUG
+#ifdef DEBUG
     std::cout << "Start:" << std::endl;
     std::cout << "\t       " << top << std::endl;
     std::cout << "\t       " << middle << std::endl;
     std::cout << "\t       " << bottom << std::endl;
 
     std::cout << "Center\t\t" << test << std::endl;
-    #endif
+#endif
 
     std::vector<int> neighbors;
     for (int i = SIZE; i > 0; i--) {
-        int n = top[i + 1] + top[i] + top[i - 1] + 
-                middle[i + 1] + middle[i - 1] + 
-                bottom[i + 1] + bottom[i] + bottom[i - 1];
+        int n = top[i + 1] + top[i] + top[i - 1] + middle[i + 1] +
+                middle[i - 1] + bottom[i + 1] + bottom[i] + bottom[i - 1];
         neighbors.push_back(n);
         // std::cout << i << " Looking at" << std::endl;
         // std::cout << top[i+1] << top[i] << top[i-1] << std::endl;
@@ -46,7 +45,7 @@ int main() {
         }
     }
 
-    #ifdef DEBUG
+#ifdef DEBUG
     std::cout << "Neighbors\t";
     for (auto i : neighbors) {
         std::cout << i;
@@ -55,12 +54,12 @@ int main() {
 
     std::cout << "Center now\t" << test << std::endl;
     std::cout << std::endl;
-    #endif
+#endif
 
     // get algo output
     bitset<SIZE> next = computeNextState(top, middle, bottom);
 
-    #ifdef DEBUG
+#ifdef DEBUG
     std::cout << std::endl;
 
     std::cout << "Neighbors\t";
@@ -68,8 +67,8 @@ int main() {
         std::cout << i;
     }
     std::cout << std::endl;
-    #endif
-    
+#endif
+
     std::cout << "computeState\t" << next << std::endl;
     std::cout << "NaiveCompare\t" << test << std::endl;
 

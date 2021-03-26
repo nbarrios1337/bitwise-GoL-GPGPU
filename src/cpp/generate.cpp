@@ -8,24 +8,24 @@
 int dim = 32;
 
 int *generate() {
-  int *grid = (int *)calloc((dim + 2) * (dim + 2), sizeof(int));
-  for (int i = 1; i <= dim; i++) {
-    for (int j = 1; j <= dim; j++) {
-      grid[i * (dim + 2) + j] = rand() % 2;
+    int *grid = (int *)calloc((dim + 2) * (dim + 2), sizeof(int));
+    for (int i = 1; i <= dim; i++) {
+        for (int j = 1; j <= dim; j++) {
+            grid[i * (dim + 2) + j] = rand() % 2;
+        }
     }
-  }
-  return grid;
+    return grid;
 }
 
 int main() {
-  int *grid = generate();
-  for (int i = 1; i <= dim; i++) {
-    for (int j = 1; j <= dim; j++) {
-      std::cout << grid[i * (dim + 2) + j];
+    int *grid = generate();
+    for (int i = 1; i <= dim; i++) {
+        for (int j = 1; j <= dim; j++) {
+            std::cout << grid[i * (dim + 2) + j];
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
-  }
 
-  free(grid);
-  return 0;
+    free(grid);
+    return 0;
 }

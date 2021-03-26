@@ -1,5 +1,5 @@
-#include "bitwise.hpp"
 #include "compute.hpp"
+#include "bitwise.hpp"
 
 int main() {
     /* Copied form bitwise.cpp */
@@ -58,7 +58,8 @@ int main() {
 #endif
 
     // get algo output
-    uint32_t out = wrapper(top.to_ullong(), middle.to_ullong(), bottom.to_ullong());
+    uint32_t out =
+        wrapper(top.to_ullong(), middle.to_ullong(), bottom.to_ullong());
 
 #ifdef DEBUG
     std::cout << std::endl;
