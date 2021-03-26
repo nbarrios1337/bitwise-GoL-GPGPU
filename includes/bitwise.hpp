@@ -4,7 +4,7 @@ using std::bitset;
 #include <iostream>
 #include <vector>
 
-#define SIZE 16
+#define SIZE 8
 #define LIVE 1
 #define DEAD 0
 

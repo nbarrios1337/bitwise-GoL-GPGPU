@@ -26,6 +26,11 @@ bin/cpp_bitwise_test: src/cpp/bitwise.cpp
 NVCXX := nvcc
 CXXFLAGS := -Wall -Wextra -std=c++11
 
+DEBUG=false
+ifeq ($(DEBUG), true)
+CXXFLAGS += -DDEBUG
+endif
+
 bin/nv_%: src/nv/%.cu
 	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) --forward-unknown-to-host-compiler $(CXXFLAGS)
 

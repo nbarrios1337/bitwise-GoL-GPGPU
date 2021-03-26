@@ -1,4 +1,4 @@
-#include "bitwise.h"
+#include "bitwise.hpp"
 
 bitset<SIZE> computeNextState(bitset<SIZE + 2> top, bitset<SIZE + 2> middle,
                               bitset<SIZE + 2> bottom) {
