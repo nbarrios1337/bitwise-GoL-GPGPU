@@ -4,12 +4,19 @@ init:
 
 all: init
 
-debug=false
+DEBUG=false
 
-ifeq ($(debug), true)
+ifeq ($(DEBUG), true)
 SCRIPT=debug.sh
 else
 SCRIPT=slurm.sh
+endif
+
+NVCXX := nvcc
+CXXFLAGS := -Wall -Wextra -std=c++11
+
+ifeq ($(DEBUG), true)
+CXXFLAGS += -DDEBUG
 endif
 
 INCLUDE_DIR=includes/
@@ -20,36 +27,32 @@ INCLUDE_DIR=includes/
 CCR := $(shell command -v sbatch 2> /dev/null)
 
 # ~~~ Specific Requirements ~~~
-bin/cpp_bitwise_test: src/cpp/bitwise.cpp
+bin/test_bitwise: src/cpp/bitwise.cpp
 
-# ~~~ CUDA Rules ~~~
-NVCXX := nvcc
-CXXFLAGS := -Wall -Wextra -std=c++11
-
-DEBUG=false
-ifeq ($(DEBUG), true)
-CXXFLAGS += -DDEBUG
-endif
+# ~~ Compilation Rules ~~~
 
 bin/nv_%: src/nv/%.cu
 	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) --forward-unknown-to-host-compiler $(CXXFLAGS)
 
-# ~~~ C++ Rules ~~~
 # nvcc can compile C++ code, some fun was had
 # cannot have the targets defined together w/ the same rule
 # see last paragraph of:
 # https://www.gnu.org/software/make/manual/html_node/Pattern-Intro.html
 
-# CXX := g++
-
 bin/cpp_%: src/cpp/%.cpp
 	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) --forward-unknown-to-host-compiler $(CXXFLAGS)
 
-# ~~~ Generic Rules ~~~
+# ~~~ Tests ~~~
+bin/test_%: tests/%.cpp
+	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) --forward-unknown-to-host-compiler $(CXXFLAGS)
+
+# ~~~ Execution Rules ~~~
 cpp_%: bin/cpp_%
 	./$^
 
-# ~~~ SLURM Rules ~~~
+test_%: bin/test_%
+	./$^
+
 ifndef CCR
 nv_%: bin/nv_%
 	./$^
