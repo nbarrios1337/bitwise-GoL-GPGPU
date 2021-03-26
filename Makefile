@@ -16,7 +16,7 @@ NVCXX := nvcc
 CXXFLAGS := -Wall -Wextra -std=c++11
 
 ifeq ($(DEBUG), true)
-CXXFLAGS += -DDEBUG
+CXXFLAGS += -DDEBUG -g -G
 endif
 
 INCLUDE_DIR=includes/
@@ -28,6 +28,8 @@ CCR := $(shell command -v sbatch 2> /dev/null)
 
 # ~~~ Specific Requirements ~~~
 bin/test_bitwise: src/cpp/bitwise.cpp
+
+bin/test_compute: src/nv/compute.cu
 
 # ~~ Compilation Rules ~~~
 
