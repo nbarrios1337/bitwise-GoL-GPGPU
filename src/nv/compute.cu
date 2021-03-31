@@ -3,7 +3,7 @@
 __device__ void get_bitsets(uint32_t *bitsets, uint64_t top, uint64_t center,
                             uint64_t bottom) {
     // 111...100
-    uint32_t notTwoLSB = (~(uint32_t)0) << 2;
+    // uint32_t notTwoLSB = (~(uint32_t)0) << 2;
     // 001...111
     uint32_t notTwoMSB = unsetBit(unsetBit(~0, 31), 30);
 
@@ -55,7 +55,7 @@ __device__ void get_bitsets(uint32_t *bitsets, uint64_t top, uint64_t center,
 
 // See Tsuda (http://vivi.dyndns.org/tech/games/LifeGame.html)
 __device__ uint32_t bitwise_sum63(uint32_t *bs) {
-    uint32_t s0, s1, s2, s3;
+    uint32_t s0 = 0, s1 = 0, s2 = 0, s3 = 0;
 
     // upper_left + upper addition (4 bitwise ops)
     s2 = bs[0] & bs[1];
@@ -111,7 +111,8 @@ __global__ void next_gen(uint32_t *out, uint32_t *bitsets, uint64_t top,
 }
 
 uint32_t wrapper(uint64_t t, uint64_t m, uint64_t b) {
-    uint32_t *bitsets, *out;
+    uint32_t *bitsets = NULL;
+    uint32_t *out = NULL;
 
     cudaMallocManaged(&bitsets, 9 * sizeof(uint32_t));
     cudaMallocManaged(&out, sizeof(uint32_t));

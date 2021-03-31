@@ -122,8 +122,8 @@ __global__ void bitLifeKernelNoLookup(const ubyte *lifeData,
     }
 }
 
-int main(int argc, char *argv[]) {
-    int i, j, iter;
+int main() {
+    uint i, j, iter;
     int *h_grid;      // Grid on host
     ubyte *d_grid;    // Grid on device
     ubyte *d_newGrid; // Second grid used on device only
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
 
     uint dim = 1024; // Linear dimension of our grid - not counting ghost cells
     // reduce to like 1<<4 or 1<<5 to run it reasonably on Pascal 1060
-    int maxIter = 1 << 10; // Number of game steps
+    uint maxIter = 1 << 10; // Number of game steps
 
     size_t bytes =
         sizeof(int) * (dim + 2) *
