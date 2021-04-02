@@ -172,9 +172,8 @@ int main() {
                 uint64_t top = grid[i - 1][j];
                 uint64_t center = grid[i][j];
                 uint64_t bottom = grid[i + 1][j];
-                uint32_t *bitsets =
-                    NULL; // these should be alloc-ed before func calls
-                uint32_t *out = NULL;
+                uint32_t *bitsets = (uint32_t*)malloc(sizeof(uint32_t*));
+                uint32_t *out = (uint32_t*)malloc(sizeof(uint32_t*));
                 get_bitsets(bitsets, top, center, bottom);
                 *out = bitwise_sum63(bitsets);
                 newGrid[i][j] = *out;
