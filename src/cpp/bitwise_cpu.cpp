@@ -1,5 +1,5 @@
-#include "compute.hpp"
 #include <cstdlib>
+#include <cstdint>
 
 int i, j, iter;
 // Linear game grid dimension
@@ -7,8 +7,32 @@ int dim = 1024;
 // Number of game iterations
 int maxIter = 1024;
 
+/* mask = 1 << pos;
+ * masked = num & mask;
+ * bit = masked >> pos
+ */
+inline uint32_t getBit(uint32_t num, int pos) {
+    return (num & (1 << pos)) >> pos;
+}
+
+/* mask = 1 << pos
+ * set = num ^ mask
+ */
+
+inline uint32_t setBit(uint32_t num, int pos) {
+    return num | (1 << pos);
+}
+
+/* mask = ~(1 << pos)
+ * unset = num ^ mask
+ */
+
+inline uint32_t unsetBit(uint32_t num, int pos) {
+    return num & (~(1 << pos));
+}
+
 void get_bitsets(uint32_t *bitsets, uint64_t top, uint64_t center,
-                            uint64_t bottom) {
+                 uint64_t bottom) {
     // 111...100
     // uint32_t notTwoLSB = (~(uint32_t)0) << 2;
     // 001...111
@@ -115,26 +139,26 @@ int main() {
     // Allocate rectangular grid of 1024 + 2 rows by 32 + 2 columns
     int **grid = (int **)malloc(sizeof(int *) * (dim + 2));
     for (i = 0; i < dim + 2; i++) {
-          grid[i] = (int *)malloc(sizeof(int *) * ((dim / 32) + 2));
+        grid[i] = (int *)malloc(sizeof(int *) * ((dim / 32) + 2));
     }
 
     // Allocate newGrid
     int **newGrid = (int **)malloc(sizeof(int *) * (dim + 2));
     for (i = 0; i < dim + 2; i++) {
         newGrid[i] = (int *)malloc(sizeof(int *) * ((dim / 32) + 2));
-      }
+    }
 
     // Main game loop
     for (iter = 0; iter < maxIter; iter++) {
         // Left-Right columns
         for (i = 1; i <= dim; i++) {
             grid[i][0] =
-                grid[i][dim/32]; // Copy last real column to left ghost column
-            grid[i][(dim/32) + 1] =
+                grid[i][dim / 32]; // Copy last real column to left ghost column
+            grid[i][(dim / 32) + 1] =
                 grid[i][1]; // Copy first real column to right ghost column
         }
         // Top-Bottom rows
-        for (j = 0; j <= (dim/32) + 1;
+        for (j = 0; j <= (dim / 32) + 1;
              j++) { // I’m pretty sure j=1; j <= dim would be fine too?
             grid[0][j] = grid[dim][j]; // Copy last real row to top ghost row
             grid[dim + 1][j] =

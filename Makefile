@@ -32,7 +32,7 @@ bin/test_bitwise: src/cpp/bitwise.cpp
 
 bin/test_compute: src/nv/compute.cu
 
-bin/cpp_bitwise_cpu: src/nv/compute.cu
+# bin/cpp_bitwise_cpu: src/nv/compute.cu
 
 # ~~ Compilation Rules ~~~
 
