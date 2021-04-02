@@ -24,12 +24,12 @@ int main() {
         // Left-Right columns
         for (i = 1; i <= dim; i++) {
             grid[i][0] =
-                grid[i][dim]; // Copy last real column to left ghost column
-            grid[i][dim + 1] =
+                grid[i][dim/32]; // Copy last real column to left ghost column
+            grid[i][(dim/32) + 1] =
                 grid[i][1]; // Copy first real column to right ghost column
         }
         // Top-Bottom rows
-        for (j = 0; j <= dim + 1;
+        for (j = 0; j <= (dim/32) + 1;
              j++) { // I’m pretty sure j=1; j <= dim would be fine too?
             grid[0][j] = grid[dim][j]; // Copy last real row to top ghost row
             grid[dim + 1][j] =
