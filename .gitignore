@@ -10,3 +10,5 @@ bin/*
 output/*
 .vscode/
 .ccls*
+.cache
+compile_commands.json

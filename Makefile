@@ -16,11 +16,23 @@ NVCXX := nvcc
 CXXFLAGS := -Wall -Wextra -std=c++11
 NVFLAGS := -Werror=all-warnings -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70
 
+CLANG_EXISTS := $(shell command -v clang++ 2> /dev/null)
+
+# See https://llvm.org/docs/CompileCudaWithLLVM.html
+ifdef CLANG_EXISTS
+CXX := clang++
+NVFLAGS += -ccbin=$(CXX)
+BONUSFLAGS := --cuda-gpu-arch=sm_61 --cuda-gpu-arch=sm_70 -L/usr/lib/cuda -lcudart_static -ldl -lrt -pthread --cuda-path=/usr/lib/cuda
+endif
+
 ifeq ($(DEBUG), true)
 CXXFLAGS += -DDEBUG -g -G
 endif
 
 INCLUDE_DIR=includes/
+
+SPACE := $(subst ,, )
+COMMA := ,
 
 # ~~~ Local vs CCR ~~~
 # The CCR variable remains undefined if
@@ -37,7 +49,13 @@ bin/test_compute: src/nv/compute.cu
 # ~~ Compilation Rules ~~~
 
 bin/nv_%: src/nv/%.cu
-	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) --forward-unknown-to-host-compiler $(CXXFLAGS)
+ifndef CLANG_EXISTS
+bin/nv_%: src/nv/%.cu
+	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) -Xcompiler $(subst $(SPACE),$(COMMA),$(CXXFLAGS))
+else
+bin/nv_%: src/nv/%.cu
+	$(CXX) $^ -o $@ -I$(INCLUDE_DIR) $(CXXFLAGS) $(BONUSFLAGS)
+endif
 
 # nvcc can compile C++ code, some fun was had
 # cannot have the targets defined together w/ the same rule
@@ -45,11 +63,11 @@ bin/nv_%: src/nv/%.cu
 # https://www.gnu.org/software/make/manual/html_node/Pattern-Intro.html
 
 bin/cpp_%: src/cpp/%.cpp
-	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) --forward-unknown-to-host-compiler $(CXXFLAGS)
+	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) -Xcompiler $(subst $(SPACE),$(COMMA),$(CXXFLAGS))
 
 # ~~~ Tests ~~~
 bin/test_%: tests/%.cpp
-	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) --forward-unknown-to-host-compiler $(CXXFLAGS)
+	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) -Xcompiler $(subst $(SPACE),$(COMMA),$(CXXFLAGS))
 
 # ~~~ Execution Rules ~~~
 cpp_%: bin/cpp_%
