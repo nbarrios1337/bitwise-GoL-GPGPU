@@ -10,7 +10,7 @@ __device__ inline uint32_t getBit(uint32_t num, int pos) {
 }
 
 /* mask = 1 << pos
- * set = num ^ mask
+ * set = num | mask
  */
 
 __device__ inline uint32_t setBit(uint32_t num, int pos) {
@@ -18,7 +18,7 @@ __device__ inline uint32_t setBit(uint32_t num, int pos) {
 }
 
 /* mask = ~(1 << pos)
- * unset = num ^ mask
+ * unset = num & mask
  */
 
 __device__ inline uint32_t unsetBit(uint32_t num, int pos) {
