@@ -30,11 +30,13 @@ int main() {
         int n = top[i + 1] + top[i] + top[i - 1] + middle[i + 1] +
                 middle[i - 1] + bottom[i + 1] + bottom[i] + bottom[i - 1];
         neighbors.push_back(n);
-        // std::cout << i << " Looking at" << std::endl;
-        // std::cout << top[i+1] << top[i] << top[i-1] << std::endl;
-        // std::cout << middle[i+1] << middle[i] << middle[i-1] << std::endl;
-        // std::cout << bottom[i+1] << bottom[i] << bottom[i-1] << std::endl;
-        // std::cout << n << std::endl;
+#ifdef DEBUG
+        std::cout << i << " Looking at" << std::endl;
+        std::cout << top[i + 1] << top[i] << top[i - 1] << std::endl;
+        std::cout << middle[i + 1] << middle[i] << middle[i - 1] << std::endl;
+        std::cout << bottom[i + 1] << bottom[i] << bottom[i - 1] << std::endl;
+        std::cout << n << std::endl;
+#endif
         if (test[i - 1] == LIVE) {
             if (n < 2 || n > 3) {
                 test[i - 1] = DEAD;
