@@ -81,7 +81,7 @@ int main() {
     int *d_newGrid; // Second grid used on device only
     int *d_tmpGrid; // tmp grid pointer used to switch between grid and newGrid
 
-    int dim = 1024; // Linear dimension of our grid - not counting ghost cells
+    int dim = 1 << 5; // Linear dimension of our grid - not counting ghost cells
     int maxIter = 1 << 10; // Number of game steps
 
     size_t bytes = sizeof(int) * (dim + 2) * (dim + 2);
@@ -116,6 +116,7 @@ int main() {
                              1);
 
     // Added this myself -N
+#ifdef DEBUG
     printf("blockSize: { %d %d %d }\n", blockSize.x, blockSize.y, blockSize.z);
     printf("gridSize: { %d %d %d }\n", gridSize.x, gridSize.y, gridSize.z);
     printf("cpyBlockSize: { %d %d %d }\n", cpyBlockSize.x, cpyBlockSize.y,
@@ -124,7 +125,7 @@ int main() {
            cpyGridRowsGridSize.y, cpyGridRowsGridSize.z);
     printf("cpyGridColsGridSize: { %d %d %d }\n", cpyGridColsGridSize.x,
            cpyGridColsGridSize.y, cpyGridColsGridSize.z);
-
+#endif
     // Main game loop
     for (iter = 0; iter < maxIter; iter++) {
 
@@ -149,8 +150,14 @@ int main() {
     int total = 0;
     for (i = 1; i <= dim; i++) {
         for (j = 1; j <= dim; j++) {
+#ifdef DEBUG
+            printf("%d", h_grid[i * (dim + 2) + j]);
+#endif
             total += h_grid[i * (dim + 2) + j];
         }
+#ifdef DEBUG
+        printf("\n");
+#endif
     }
     printf("Total Alive: %d\n", total);
 
