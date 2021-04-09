@@ -29,7 +29,7 @@ CXXFLAGS += -DDEBUG
 NVFLAGS += -g -G
 endif
 
-INCLUDE_DIR=includes/
+INCLUDE_DIR=includes/ src/utils.cpp
 
 SPACE := $(subst ,, )
 COMMA := ,

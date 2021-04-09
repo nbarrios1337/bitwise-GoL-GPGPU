@@ -1,3 +1,6 @@
+#ifndef _UTIL_H
+#define _UTIL_H
+
 #include <cstdint>
 #include <cuda_runtime.h>
 #include <iostream>
@@ -26,7 +29,7 @@ __device__ inline uint32_t unsetBit(uint32_t num, int pos) {
     return num & (~(1 << pos));
 }
 
-std::ostream& operator<<(std::ostream&os, const dim3 d) {
-    os << '{' << d.x << ' ' << d.y << ' ' << d.z << '}';
-    return os;
-} 
+
+std::ostream& operator<<(std::ostream&os, const dim3 d);
+
+#endif //end _UTIL_H
