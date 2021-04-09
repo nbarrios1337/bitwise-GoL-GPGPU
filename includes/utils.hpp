@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cuda_runtime.h>
+#include <iostream>
 
 /* mask = 1 << pos;
  * masked = num & mask;
@@ -24,3 +25,8 @@ __device__ inline uint32_t setBit(uint32_t num, int pos) {
 __device__ inline uint32_t unsetBit(uint32_t num, int pos) {
     return num & (~(1 << pos));
 }
+
+std::ostream& operator<<(std::ostream&os, const dim3 d) {
+    os << '{' << d.x << ' ' << d.y << ' ' << d.z << '}';
+    return os;
+} 
