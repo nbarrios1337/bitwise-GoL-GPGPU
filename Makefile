@@ -21,12 +21,12 @@ CLANG_EXISTS := $(shell command -v clang++ 2> /dev/null)
 # See https://llvm.org/docs/CompileCudaWithLLVM.html
 ifdef CLANG_EXISTS
 CXX := clang++
-NVFLAGS += -ccbin=$(CXX)
 BONUSFLAGS := --cuda-gpu-arch=sm_61 --cuda-gpu-arch=sm_70 -L/usr/lib/cuda -lcudart_static -ldl -lrt -pthread --cuda-path=/usr/lib/cuda
 endif
 
 ifeq ($(DEBUG), true)
-CXXFLAGS += -DDEBUG -g -G
+CXXFLAGS += -DDEBUG
+NVFLAGS += -g -G
 endif
 
 INCLUDE_DIR=includes/
@@ -44,18 +44,20 @@ bin/test_bitwise: src/cpp/bitwise.cpp
 
 bin/test_compute: src/nv/compute.cu
 
-# bin/cpp_bitwise_cpu: src/nv/compute.cu
+# ~~~ Clangd Specific Rules ~~~
+ifdef CLANG_EXISTS
+BOL: src/nv/BOL.cu
+	$(CXX) $^ -o bin/nv_BOL -I$(INCLUDE_DIR) $(CXXFLAGS) $(BONUSFLAGS)
+
+compile_commands.json:
+	bear $(MAKE) BOL
+
+clangd: compile_commands.json
+endif
 
 # ~~ Compilation Rules ~~~
-
-bin/nv_%: src/nv/%.cu
-ifndef CLANG_EXISTS
 bin/nv_%: src/nv/%.cu
 	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) -Xcompiler $(subst $(SPACE),$(COMMA),$(CXXFLAGS))
-else
-bin/nv_%: src/nv/%.cu
-	$(CXX) $^ -o $@ -I$(INCLUDE_DIR) $(CXXFLAGS) $(BONUSFLAGS)
-endif
 
 # nvcc can compile C++ code, some fun was had
 # cannot have the targets defined together w/ the same rule
