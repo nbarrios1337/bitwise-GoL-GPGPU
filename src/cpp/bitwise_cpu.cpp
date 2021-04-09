@@ -1,10 +1,11 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <bitset>
 #define SRAND_VALUE 1985
 
 // Linear game grid dimension
-int x_dim = 4;
+int x_dim = 1;
 int y_dim = x_dim * sizeof(int);
 // Number of game iterations
 int maxIter = 1;
@@ -133,6 +134,24 @@ uint32_t bitwise_sum63(uint32_t *bs) {
   return s3 | (bs[4] & s2);
 }
 
+/*
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+x x x x
+*/
 int main() {
   // Allocate rectangular grid of 1024 + 2 rows by 32 + 2 columns
   srand(SRAND_VALUE);
@@ -140,11 +159,10 @@ int main() {
   int *newGrid = (int *)calloc((y_dim + 2) * (x_dim + 2), sizeof(int));
   for (int i = 1; i <= y_dim; i++) {
     for (int j = 1; j <= x_dim; j++) {
-      int randomBit =
-          rand() %
-          2; // Advanced random bit generation (I'm sorry Dr. Zola LOL.)
-      grid[i * (x_dim + 2) + j] = randomBit;
-      newGrid[i * (x_dim + 2) + j] = randomBit;
+      int randomBits =
+          rand(); // Advanced random bit generation (I'm sorry Dr. Zola LOL.)
+      grid[i * (x_dim + 2) + j] = randomBits;
+      newGrid[i * (x_dim + 2) + j] = randomBits;
     }
   }
 
@@ -176,8 +194,8 @@ int main() {
         uint64_t top = grid[(i - 1) * (x_dim + 2) + j];
         uint64_t center = grid[i * (x_dim + 2) + j];
         uint64_t bottom = grid[(i + 1) * (x_dim + 2) + j];
-        uint32_t *bitsets = (uint32_t *)malloc(sizeof(uint32_t *));
-        uint32_t *out = (uint32_t *)malloc(sizeof(uint32_t *));
+        uint32_t *bitsets = (uint32_t *)malloc(sizeof(uint32_t *)); //put this on the stack not heap
+        uint32_t *out = (uint32_t *)malloc(sizeof(uint32_t *)); //also should be on the stack
         get_bitsets(bitsets, top, center, bottom);
         *out = bitwise_sum63(bitsets);
         newGrid[i * (x_dim + 2) + j] = *out;
@@ -194,7 +212,9 @@ int main() {
   int count = 0;
   for (int i = 1; i <= y_dim; i++) {
     for (int j = 1; j <= x_dim; j++) {
-      count += newGrid[i * (x_dim + 2) + j];
+      std::bitset<32> cells (newGrid[i * (x_dim + 2) + j]);
+      count += cells.count();
+      std::cout << cells << std::endl;
     }
   }
   std::cout << count << std::endl;
