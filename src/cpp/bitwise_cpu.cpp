@@ -1,11 +1,11 @@
 #include <cstdlib>
 #include <cstdint>
 
-int i, j, iter;
 // Linear game grid dimension
-int dim = 1024;
+int x_dim = 4;
+int y_dim = x_dim * sizeof(int);
 // Number of game iterations
-int maxIter = 1024;
+int maxIter = 1;
 
 /* mask = 1 << pos;
  * masked = num & mask;
@@ -137,51 +137,54 @@ uint32_t bitwise_sum63(uint32_t *bs) {
 
 int main() {
     // Allocate rectangular grid of 1024 + 2 rows by 32 + 2 columns
-    int **grid = (int **)malloc(sizeof(int *) * (dim + 2));
-    for (i = 0; i < dim + 2; i++) {
-        grid[i] = (int *)malloc(sizeof(int *) * ((dim / 32) + 2));
+    int *grid = (int *)calloc((y_dim + 2) * (x_dim + 2), sizeof(int));
+    for (int i = 1; i <= y_dim; i++) {
+        for (int j = 1; j <= x_dim; j++) {
+            grid[i * (x_dim + 2) + j] = 1;
+        }
     }
 
     // Allocate newGrid
-    int **newGrid = (int **)malloc(sizeof(int *) * (dim + 2));
-    for (i = 0; i < dim + 2; i++) {
-        newGrid[i] = (int *)malloc(sizeof(int *) * ((dim / 32) + 2));
+    int *newGrid = (int *)calloc((y_dim + 2) * (x_dim + 2), sizeof(int));
+    for (int i = 1; i <= y_dim; i++) {
+        for (int j = 1; j <= x_dim; j++) {
+            newGrid[i * (x_dim + 2) + j] = 1;
+        }
     }
 
     // Main game loop
-    for (iter = 0; iter < maxIter; iter++) {
+    for (int iter = 0; iter < maxIter; iter++) {
         // Left-Right columns
-        for (i = 1; i <= dim; i++) {
-            grid[i][0] =
-                grid[i][dim / 32]; // Copy last real column to left ghost column
-            grid[i][(dim / 32) + 1] =
-                grid[i][1]; // Copy first real column to right ghost column
+        for (int i = 1; i <= y_dim; i++) {
+            grid[i*(x_dim + 2)] =
+                grid[i*(x_dim + 2) + x_dim]; // Copy last real column to left ghost column
+            grid[i*(x_dim + 2) + x_dim] =
+                grid[i*(x_dim + 2) + 1]; // Copy first real column to right ghost column
         }
         // Top-Bottom rows
-        for (j = 0; j <= (dim / 32) + 1;
-             j++) { // I’m pretty sure j=1; j <= dim would be fine too?
-            grid[0][j] = grid[dim][j]; // Copy last real row to top ghost row
-            grid[dim + 1][j] =
-                grid[1][j]; // Copy first real row to bottom ghost row
+        for (int j = 0; j <= x_dim + 1; j++) {
+            grid[(0)*(x_dim + 2) + j] = grid[(y_dim - 1)*(x_dim + 2) + j]; // Copy last real row to top ghost row
+            grid[(y_dim)*(x_dim + 2) + j] =
+                grid[(1)*(x_dim + 2) + j]; // Copy first real row to bottom ghost row
         }
 
         // Now we loop over all cells and determine their fate
-        for (i = 1; i <= dim; i++) {
-            for (j = 1; j <= (dim / 32); j++) {
+        for (int i = 1; i <= y_dim; i++) {
+            for (int j = 1; j <= x_dim; j++) {
                 // Get the number of neighbors for a given grid point
-                uint64_t top = grid[i - 1][j];
-                uint64_t center = grid[i][j];
-                uint64_t bottom = grid[i + 1][j];
+                uint64_t top = grid[(i-1)*(x_dim + 2) + j];
+                uint64_t center = grid[i*(x_dim + 2) + j];
+                uint64_t bottom = grid[(i+1)*(x_dim + 2) + j];
                 uint32_t *bitsets = (uint32_t*)malloc(sizeof(uint32_t*));
                 uint32_t *out = (uint32_t*)malloc(sizeof(uint32_t*));
                 get_bitsets(bitsets, top, center, bottom);
                 *out = bitwise_sum63(bitsets);
-                newGrid[i][j] = *out;
+                newGrid[i*(x_dim + 2) + j] = *out;
             }
         }
 
         // Done with one step so we swap our grids and iterate again
-        int **tmpGrid = grid;
+        int *tmpGrid = grid;
         grid = newGrid;
         newGrid = tmpGrid;
     } // End main game loop
