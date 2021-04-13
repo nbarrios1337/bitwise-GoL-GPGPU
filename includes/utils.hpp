@@ -9,7 +9,8 @@
  * masked = num & mask;
  * bit = masked >> pos
  */
-__device__ inline uint32_t getBit(uint32_t num, int pos) {
+
+template <typename T> __device__ inline T getBit(T num, short pos) {
     return (num & (1 << pos)) >> pos;
 }
 
@@ -17,7 +18,7 @@ __device__ inline uint32_t getBit(uint32_t num, int pos) {
  * set = num | mask
  */
 
-__device__ inline uint32_t setBit(uint32_t num, int pos) {
+template <typename T> __device__ inline T setBit(T num, short pos) {
     return num | (1 << pos);
 }
 
@@ -25,11 +26,11 @@ __device__ inline uint32_t setBit(uint32_t num, int pos) {
  * unset = num & mask
  */
 
-__device__ inline uint32_t unsetBit(uint32_t num, int pos) {
+template <typename T> __device__ inline T unsetBit(T num, short pos) {
     return num & (~(1 << pos));
 }
 
+/* dim3 << overload */
+std::ostream &operator<<(std::ostream &os, const dim3 d);
 
-std::ostream& operator<<(std::ostream&os, const dim3 d);
-
-#endif //end _UTIL_H
+#endif // end _UTIL_H
