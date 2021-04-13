@@ -31,6 +31,77 @@ void init_grid(uint32_t *g) {
     }
 }
 
+// See compute.cu for more information
+// This function combines the functionalities of
+// get_bitsets and bitwise_sum63 in order to
+// remove the need for the bitsets array.
+__device__ uint32_t compute63(uint64_t top, uint64_t center, uint64_t bottom) {
+    // 111...100
+    // uint32_t notTwoLSB = (~(uint32_t)0) << 2;
+    // 001...111
+    uint32_t notTwoMSB = unsetBit(unsetBit(~0, 31), 30);
+
+    uint32_t upper_left = top >> 2;
+    uint32_t upper = unsetBit(top >> 1, 31);
+    uint32_t upper_right = top & notTwoMSB;
+
+    uint32_t middle_left = center >> 2;
+    uint32_t middle = unsetBit(center >> 1, 31);
+    uint32_t middle_right = center & notTwoMSB;
+
+    uint32_t lower_left = bottom >> 2;
+    uint32_t lower = unsetBit(bottom >> 1, 31);
+    uint32_t lower_right = bottom & notTwoMSB;
+
+    uint32_t s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+
+    // upper_left + upper addition (4 bitwise ops)
+    s2 = upper_left & upper;
+    s1 = upper_left ^ upper;
+    s0 = ~(upper_left | upper);
+
+    // upper_right addition (9 bitwise ops)
+    uint32_t nc = ~upper_right;
+    s3 = s2 & upper_right;
+    s2 = (s2 & nc) | (s1 & upper_right);
+    s1 = (s1 & nc) | (s0 & upper_right);
+    s0 &= nc;
+
+    // middle_left addition (11 b-ops)
+    uint32_t nd = ~middle_left;
+    s3 = (s3 & nd) | (s2 & middle_left);
+    s2 = (s2 & nd) | (s1 & middle_left);
+    s1 = (s1 & nd) | (s0 & middle_left);
+    s0 &= nd;
+
+    // middle_right add (11 b-ops)
+    uint32_t ne = ~middle_right;
+    s3 = (s3 & ne) | (s2 & middle_right);
+    s2 = (s2 & ne) | (s1 & middle_right);
+    s1 = (s1 & ne) | (s0 & middle_right);
+    s0 &= ne;
+
+    // lower_left add (11 b-ops)
+    uint32_t nf = ~lower_left;
+    s3 = (s3 & nf) | (s2 & lower_left);
+    s2 = (s2 & nf) | (s1 & lower_left);
+    s1 = (s1 & nf) | (s0 & lower_left);
+    s0 &= nf;
+
+    // lower add (10 b-ops)
+    uint32_t ng = ~lower;
+    s3 = (s3 & ng) | (s2 & lower);
+    s2 = (s2 & ng) | (s1 & lower);
+    s1 = (s1 & ng) | (s0 & lower);
+
+    // lower_right add (7 b-ops)
+    uint32_t nh = ~lower_right;
+    s3 = (s3 & nh) | (s2 & lower_right);
+    s2 = (s2 & nh) | (s1 & lower_right);
+
+    return s3 | (middle & s2);
+}
+
 __global__ void simulate(uint32_t *g) {
     int iy = blockDim.y * blockIdx.y + threadIdx.y + 1;
     int ix = blockDim.x * blockIdx.x + threadIdx.x + 1;
@@ -44,8 +115,27 @@ __global__ void simulate(uint32_t *g) {
 
     g[index] = threadIdx.y;
 #else
-    // TODO: get surrounding ints and then compute
-    g[index] = g[index];
+    // Get surrounding ints and then compute
+    int top_index = (iy - 1) * (X_DIM + 2) + ix;
+    int bottom_index = (iy + 1) * (X_DIM + 2) + ix;
+
+    // make space for the LSB from the next number over's MSB
+    uint64_t top_num = g[top_index] << 1;
+    uint64_t center_num = g[index] << 1;
+    uint64_t bottom_num = g[bottom_index] << 1;
+
+    // since we shift in a 0, xor will set the LSB to
+    // the bit from the next's MSB. See XOR truth table
+    top_num ^= getBit(g[top_index + 1], 31);
+    center_num ^= getBit(g[index + 1], 31);
+    bottom_num ^= getBit(g[bottom_index + 1], 31);
+
+    // explicitly specify type in order to avoid shifting out all bits
+    top_num ^= getBit<uint64_t>(g[top_index - 1], 0) << 32;
+    center_num ^= getBit<uint64_t>(g[index - 1], 0) << 32;
+    bottom_num ^= getBit<uint64_t>(g[bottom_index - 1], 0) << 32;
+
+    g[index] = compute63(top_num, center_num, bottom_num);
 #endif
 }
 
