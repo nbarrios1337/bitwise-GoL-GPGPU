@@ -166,6 +166,9 @@ int main() {
     }
   }
 
+  uint32_t *bitsets = (uint32_t *)calloc(9, sizeof(uint32_t *)); //put this on the stack not heap
+  uint32_t *out = (uint32_t *)calloc(1, sizeof(uint32_t *)); //also should be on the stack
+
   // Main game loop
   for (int iter = 0; iter < maxIter; iter++) {
     // Left-Right columns
@@ -194,12 +197,9 @@ int main() {
         uint64_t top = grid[(i - 1) * (x_dim + 2) + j];
         uint64_t center = grid[i * (x_dim + 2) + j];
         uint64_t bottom = grid[(i + 1) * (x_dim + 2) + j];
-        uint32_t *bitsets = (uint32_t *)malloc(sizeof(uint32_t *)); //put this on the stack not heap
-        uint32_t *out = (uint32_t *)malloc(sizeof(uint32_t *)); //also should be on the stack
         get_bitsets(bitsets, top, center, bottom);
         *out = bitwise_sum63(bitsets);
         newGrid[i * (x_dim + 2) + j] = *out;
-        free(bitsets);
         //free(out); //Having trouble freeing this memory
       }
     }
@@ -209,6 +209,10 @@ int main() {
     grid = newGrid;
     newGrid = tmpGrid;
   } // End main game loop
+
+  free(bitsets);
+  free(out);
+
   int count = 0;
   for (int i = 1; i <= y_dim; i++) {
     for (int j = 1; j <= x_dim; j++) {

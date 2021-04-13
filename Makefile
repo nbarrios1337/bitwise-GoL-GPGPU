@@ -25,7 +25,7 @@ BONUSFLAGS := --cuda-gpu-arch=sm_61 --cuda-gpu-arch=sm_70 -L/usr/lib/cuda -lcuda
 endif
 
 ifeq ($(DEBUG), true)
-CXXFLAGS += -DDEBUG
+CXXFLAGS += -g -DDEBUG
 NVFLAGS += -g -G
 endif
 
