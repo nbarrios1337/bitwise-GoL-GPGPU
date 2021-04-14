@@ -26,7 +26,11 @@
 void init_grid(uint32_t *g) {
     for (int i = 1; i < Y_DIM + 1; i++) {
         for (int j = 1; j < X_DIM + 1; j++) {
+#ifdef DEBUG
+            g[i * (X_DIM + 2) + j] = -i;
+#else
             g[i * (X_DIM + 2) + j] = rand();
+#endif
         }
     }
 }
@@ -102,18 +106,78 @@ __device__ uint32_t compute63(uint64_t top, uint64_t center, uint64_t bottom) {
     return s3 | (middle & s2);
 }
 
+/* bitwise implementation requires a lot
+ * fewer threads for the row, but fits
+ * nicely when copying over columns
+ */
+
+// Call with X_DIM + 2 threads
+__global__ void ghost_rows(uint32_t *g) {
+    // Need X_DIM + 2 threads for one thread to take care
+    // of a given column's first and last element,
+    // INCLUDING the column's ghost row elements
+
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+
+    int bottom = (Y_DIM + 1) * (X_DIM + 2) + index;
+    int top = 0 * (X_DIM + 2) + index;
+
+#ifdef DEBUG
+    printf("[rows] Blk: (%d,%d) Thread: (%d,%d) -> Col = (%d)\n", blockIdx.x,
+           blockIdx.y, threadIdx.x, threadIdx.y, index);
+    g[bottom] = 3;
+    g[top] = 4;
+#else
+    // Mirror first real row to bottom ghost row
+    g[bottom] = g[top + (X_DIM + 2)];
+    // Mirror last real row to top ghost row
+    g[top] = g[bottom - (X_DIM + 2)];
+#endif
+}
+
+// Call with a block size as defined in main
+__global__ void ghost_columns(uint32_t *g) {
+    // Need a block_size (see main) amt of threads
+    // one for each row of the two needed columns,
+    // EXCLUDING the rows's ghost column elements.
+
+    int index = blockDim.x * blockIdx.x + threadIdx.x + 1;
+
+    int left = index * (X_DIM + 2) + 0;
+    int right = index * (X_DIM + 2) + X_DIM + 1;
+
+#ifdef DEBUG
+    printf("[cols] Blk: (%d,%d) Thread: (%d,%d) -> Row = (%d)\n", blockIdx.x,
+           blockIdx.y, threadIdx.x, threadIdx.y, index);
+    printf("[cols] Row = (%d) -> Left: %d, Right: %d\n", index, left, right);
+    g[right] = 1;
+    g[left] = 2;
+#else
+    // Mirror first real column to right ghost column
+    g[right] = g[left + 1];
+    // Mirror last real column to left ghost column
+    g[left] = g[right - 1];
+#endif
+}
+
+/* Note: ghost_columns does NOT account for the diagonals
+ * but ghost_rows DOES. Be sure to call ghost_columns FIRST
+ * in order for ghost_rows to fill the diagonals.
+ */
+
 __global__ void simulate(uint32_t *g) {
     int iy = blockDim.y * blockIdx.y + threadIdx.y + 1;
     int ix = blockDim.x * blockIdx.x + threadIdx.x + 1;
     int index = iy * (X_DIM + 2) + ix;
 #ifdef DEBUG
     // printf("index: %d (%d * %d, %d)\n", index, iy, (X_DIM + 2), ix);
-    printf("Blk: (%d,%d) Thread: (%d,%d) -> Row/Col = (%d,%d)\tindex: %d (%d * "
+    printf("[simulate] Blk: (%d,%d) Thread: (%d,%d) -> Row/Col = "
+           "(%d,%d)\tindex: %d (%d * "
            "%d, %d)\n",
            blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, ix, iy, index, iy,
            (X_DIM + 2), ix);
 
-    g[index] = threadIdx.y;
+    // g[index] = 255;
 #else
     // Get surrounding ints and then compute
     int top_index = (iy - 1) * (X_DIM + 2) + ix;
@@ -156,6 +220,8 @@ __global__ void simulate(uint32_t *g) {
  * - cols divided up to fulfill 32*n == SIZE, where n == # blocks
  */
 int main() {
+    // Remove when benchmarking
+    srand(1985);
 #ifdef DEBUG
     std::cout << "size: " << (SIZE) << std::endl;
     std::cout << "x dim: " << (X_DIM + 2) << " (" << (X_DIM) << "+2)"
@@ -168,14 +234,10 @@ int main() {
 
     uint32_t *grid = NULL;
     uint32_t *tmpGrid = NULL;
-
-    uint32_t *bitsets = NULL;
     uint32_t *out = NULL;
 
     cudaMallocManaged(&grid, TOTAL_INTS * sizeof(uint32_t));
     cudaMallocManaged(&tmpGrid, TOTAL_INTS * sizeof(uint32_t));
-
-    cudaMallocManaged(&bitsets, 9 * sizeof(uint32_t));
     cudaMallocManaged(&out, sizeof(uint32_t));
 
     // init on host
@@ -185,10 +247,31 @@ int main() {
     dim3 block_size(1, NUM_THREADS);
     dim3 grid_size(X_DIM, X_DIM);
 
+    dim3 grid_size_gCols(X_DIM);
+    dim3 block_size_gCols(NUM_THREADS);
+
+    dim3 grid_size_gRows(1);
+    dim3 block_size_gRows(X_DIM + 2);
+
 #ifdef DEBUG
     std::cout << "block_size: " << block_size << std::endl;
     std::cout << "grid_size: " << grid_size << std::endl;
-    std::cout << "Calling simulate<<<" << block_size << ", " << grid_size
+#endif
+
+#ifdef DEBUG
+    std::cout << "Calling ghost_columns<<<" << grid_size_gCols << ", "
+              << block_size_gCols << ">>>" << std::endl;
+#endif
+    ghost_columns<<<grid_size_gCols, block_size_gCols>>>(grid);
+
+#ifdef DEBUG
+    std::cout << "Calling ghost_rows<<<" << grid_size_gRows << ", "
+              << block_size_gRows << ">>>" << std::endl;
+#endif
+    ghost_rows<<<grid_size_gRows, block_size_gRows>>>(grid);
+
+#ifdef DEBUG
+    std::cout << "Calling simulate<<<" << grid_size << ", " << block_size
               << ">>>" << std::endl;
 #endif
 
@@ -197,30 +280,58 @@ int main() {
     // CALL THIS BEFORE ANY DEVICE -> HOST MEM ACCESS
     cudaDeviceSynchronize();
 
+#ifdef DEBUG
+    // Prints the border cells
     int count = 0;
     for (int i = 0; i < Y_DIM + 2; i++) {
         for (int j = 0; j < X_DIM + 2; j++) {
-#ifdef DEBUG
-            std::cout << std::bitset<32>(grid[i * (X_DIM + 2) + j]).to_ullong()
-                      << ' ';
-#else
-            std::cout << std::bitset<32>(grid[i * (X_DIM + 2) + j]) << ' ';
-#endif
+            auto val = std::bitset<32>(grid[i * (X_DIM + 2) + j]);
+            std::cout << val.to_ullong() << '\t';
             count += 32;
         }
         std::cout << std::endl;
     }
+#else
+    int sum = 0;
+    for (int i = 1; i < Y_DIM + 1; i++) {
+        for (int j = 1; j < X_DIM + 1; j++) {
+            auto val = std::bitset<32>(grid[i * (X_DIM + 2) + j]);
+            std::cout << val << ' ';
+            sum += val.count();
+        }
+        std::cout << std::endl;
+    }
+#endif
+
+    // std::cout << "Columns" << std::endl;
+    // // column checking
+    // for (int k = 0; k < Y_DIM + 2; k++) {
+    //     auto a = std::bitset<32>(grid[k * (X_DIM + 2)]);
+    //     auto b = std::bitset<32>(grid[k * (X_DIM + 2) + X_DIM]);
+    //     std::cout << a << " vs " << b << (a == b ? ": match" : ": no match")
+    //     << std::endl;
+    // }
+
+    // std::cout << "Rows" << std::endl;
+    // // row checking
+    //     for (int k = 0; k < X_DIM + 2; k++) {
+    //     auto a = std::bitset<32>(grid[k + (X_DIM + 2)]);
+    //     auto b = std::bitset<32>(grid[k + (X_DIM + 2) * (Y_DIM+1)]);
+    //     std::cout << a << " vs " << b << (a == b ? ": match" : ": no match")
+    //     << std::endl;
+    // }
 
 #ifdef DEBUG
     std::cout << "Sizes " << (count == TOTAL_ELEMENTS ? "" : "not ")
               << "match: ";
     std::cout << count << " counted, " << TOTAL_ELEMENTS << " total"
               << std::endl;
+#else
+    std::cout << sum << std::endl;
 #endif
 
     cudaFree(grid);
     cudaFree(tmpGrid);
-    cudaFree(bitsets);
     cudaFree(out);
 
     return 0;

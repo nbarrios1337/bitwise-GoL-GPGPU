@@ -71,6 +71,11 @@ bin/cpp_%: src/cpp/%.cpp
 bin/test_%: tests/%.cpp
 	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) -Xcompiler $(subst $(SPACE),$(COMMA),$(CXXFLAGS))
 
+test: bin/cpp_bitwise_cpu bin/nv_BOL
+	./bin/cpp_bitwise_cpu > output/cpu.txt
+	./bin/nv_BOL > output/nv.txt
+	meld output/cpu.txt output/nv.txt
+
 # ~~~ Execution Rules ~~~
 cpp_%: bin/cpp_%
 	./$^
