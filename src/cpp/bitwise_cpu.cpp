@@ -1,34 +1,15 @@
+#include <bitset>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
-#include <bitset>
+#include "compute.hpp"
 #define SRAND_VALUE 1985
 
 // Linear game grid dimension
 int x_dim = 1;
-int y_dim = x_dim * sizeof(int);
+int y_dim = x_dim * 32;
 // Number of game iterations
 int maxIter = 1;
-
-/* mask = 1 << pos;
- * masked = num & mask;
- * bit = masked >> pos
- */
-inline uint32_t getBit(uint32_t num, int pos) {
-  return (num & (1 << pos)) >> pos;
-}
-
-/* mask = 1 << pos
- * set = num ^ mask
- */
-
-inline uint32_t setBit(uint32_t num, int pos) { return num | (1 << pos); }
-
-/* mask = ~(1 << pos)
- * unset = num ^ mask
- */
-
-inline uint32_t unsetBit(uint32_t num, int pos) { return num & (~(1 << pos)); }
 
 void get_bitsets(uint32_t *bitsets, uint64_t top, uint64_t center,
                  uint64_t bottom) {
@@ -193,14 +174,29 @@ int main() {
     // Now we loop over all cells and determine their fate
     for (int i = 1; i <= y_dim; i++) {
       for (int j = 1; j <= x_dim; j++) {
-        // Get the number of neighbors for a given grid point
-        uint64_t top = grid[(i - 1) * (x_dim + 2) + j];
-        uint64_t center = grid[i * (x_dim + 2) + j];
-        uint64_t bottom = grid[(i + 1) * (x_dim + 2) + j];
-        get_bitsets(bitsets, top, center, bottom);
+        int top_index = (i - 1) * (x_dim + 2) + j;
+        int index = i * (x_dim + 2) + j;
+        int bottom_index = (i + 1) * (x_dim + 2) + j;
+
+        // make space for the LSB from the next number over's MSB
+        uint64_t top_num = grid[top_index] << 1;
+        uint64_t center_num = grid[index] << 1;
+        uint64_t bottom_num = grid[bottom_index] << 1;
+
+        // since we shift in a 0, xor will set the LSB to
+        // the bit from the next's MSB. See XOR truth table
+        top_num ^= getBit(grid[top_index + 1], 31);
+        center_num ^= getBit(grid[index + 1], 31);
+        bottom_num ^= getBit(grid[bottom_index + 1], 31);
+
+        // explicitly specify type in order to avoid shifting out all bits
+        top_num ^= getBit<uint64_t>(grid[top_index - 1], 0) << 32;
+        center_num ^= getBit<uint64_t>(grid[index - 1], 0) << 32;
+        bottom_num ^= getBit<uint64_t>(grid[bottom_index - 1], 0) << 32;
+
+        get_bitsets(bitsets, top_num, center_num, bottom_num);
         *out = bitwise_sum63(bitsets);
         newGrid[i * (x_dim + 2) + j] = *out;
-        //free(out); //Having trouble freeing this memory
       }
     }
 
@@ -216,7 +212,7 @@ int main() {
   int count = 0;
   for (int i = 1; i <= y_dim; i++) {
     for (int j = 1; j <= x_dim; j++) {
-      std::bitset<32> cells (newGrid[i * (x_dim + 2) + j]);
+      std::bitset<32> cells (grid[i * (x_dim + 2) + j]);
       count += cells.count();
       std::cout << cells << std::endl;
     }
