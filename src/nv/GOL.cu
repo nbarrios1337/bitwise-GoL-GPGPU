@@ -7,7 +7,7 @@
 #define SRAND_VALUE 1985
 #define BLOCK_SIZE 16
 
-__global__ void ghostRows(int dim, uint8_t *grid) {
+__global__ void ghostRows(int dim, uint32_t *grid) {
   // We want id ∈ [1,dim]
   int id = blockDim.x * blockIdx.x + threadIdx.x + 1;
 
@@ -19,7 +19,7 @@ __global__ void ghostRows(int dim, uint8_t *grid) {
   }
 }
 
-__global__ void ghostCols(int dim, uint8_t *grid) {
+__global__ void ghostCols(int dim, uint32_t *grid) {
   // We want id ∈ [0,dim+1]
   int id = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -31,7 +31,7 @@ __global__ void ghostCols(int dim, uint8_t *grid) {
   }
 }
 
-__global__ void GOL(int dim, int *grid, int *newGrid) {
+__global__ void GOL(int dim, uint32_t *grid, uint32_t *newGrid) {
   // We want id ∈ [1,dim]
   int iy = blockDim.y * blockIdx.y + threadIdx.y + 1;
   int ix = blockDim.x * blockIdx.x + threadIdx.x + 1;
@@ -122,9 +122,9 @@ __global__ void bitLifeKernelNoLookup(const ubyte *lifeData,
 int main() {
   uint i, j, iter;
   int *h_grid;      // Grid on host
-  ubyte *d_grid;    // Grid on device
-  ubyte *d_newGrid; // Second grid used on device only
-  ubyte *d_tmpGrid; // tmp grid pointer used to switch between grid and
+  uint32_t *d_grid;    // Grid on device
+  uint32_t *d_newGrid; // Second grid used on device only
+  uint32_t *d_tmpGrid; // tmp grid pointer used to switch between grid and
                     // newGrid
 
   uint dim = 1024; // Linear dimension of our grid - not counting ghost cells
@@ -165,9 +165,8 @@ int main() {
 
     ghostRows<<<cpyGridRowsGridSize, cpyBlockSize>>>(dim, d_grid);
     ghostCols<<<cpyGridColsGridSize, cpyBlockSize>>>(dim, d_grid);
-    // GOL<<<gridSize, blockSize>>>(dim, d_grid, d_newGrid);
-    bitLifeKernelNoLookup<<<gridSize, blockSize>>>(d_grid, dim, dim, 4,
-                                                   d_newGrid);
+    GOL<<<gridSize, blockSize>>>(dim, d_grid, d_newGrid);
+    // bitLifeKernelNoLookup<<<gridSize, blockSize>>>(d_grid, dim, dim, 4, d_newGrid);
     // Swap our grids and iterate again
     d_tmpGrid = d_grid;
     d_grid = d_newGrid;
@@ -181,8 +180,10 @@ int main() {
   int total = 0;
   for (i = 1; i <= dim; i++) {
     for (j = 1; j <= dim; j++) {
+      printf("%d", h_grid[i * (dim + 2) + j]);
       total += h_grid[i * (dim + 2) + j];
     }
+    printf("\n");
   }
   printf("Total Alive: %d\n", total);
 
