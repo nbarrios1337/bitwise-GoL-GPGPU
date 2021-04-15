@@ -149,6 +149,12 @@ int main() {
     }
   }
 
+  // See
+  // https://developer.nvidia.com/blog/how-implement-performance-metrics-cuda-cc/
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+
   // Copy over initial game grid (Dim-1 threads)
   cudaMemcpy(d_grid, h_grid, bytes, cudaMemcpyHostToDevice);
 
@@ -160,6 +166,7 @@ int main() {
   dim3 cpyGridRowsGridSize((int)ceil(dim / (float)cpyBlockSize.x), 1, 1);
   dim3 cpyGridColsGridSize((int)ceil((dim + 2) / (float)cpyBlockSize.x), 1, 1);
 
+  cudaEventRecord(start);
   // Main game loop
   for (iter = 0; iter < maxIter; iter++) {
 
@@ -173,19 +180,30 @@ int main() {
     d_newGrid = d_tmpGrid;
   } // iter loop
 
+  cudaEventRecord(stop);
+
   // Copy back results and sum
   cudaMemcpy(h_grid, d_grid, bytes, cudaMemcpyDeviceToHost);
+
+  cudaEventSynchronize(stop);
+
+  cudaDeviceSynchronize();
 
   // Sum up alive cells and print results
   int total = 0;
   for (i = 1; i <= dim; i++) {
     for (j = 1; j <= dim; j++) {
-      printf("%d", h_grid[i * (dim + 2) + j]);
+      //printf("%d", h_grid[i * (dim + 2) + j]);
       total += h_grid[i * (dim + 2) + j];
     }
-    printf("\n");
+    //printf("\n");
   }
   printf("Total Alive: %d\n", total);
+
+  float ms = 0;
+  cudaEventElapsedTime(&ms, start, stop);
+
+  printf("ElapsedTime: %f ms\n", ms);
 
   // Release memory
   cudaFree(d_grid);
