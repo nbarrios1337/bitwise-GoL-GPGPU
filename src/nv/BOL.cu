@@ -243,6 +243,11 @@ int main() {
     // init on host
     init_grid(grid);
 
+    // See https://developer.nvidia.com/blog/unified-memory-cuda-beginners/
+    int device = -1;
+    cudaGetDevice(&device);
+    cudaMemPrefetchAsync(grid, TOTAL_INTS * sizeof(uint32_t), device);
+
     // Adapted from ORNL
     dim3 block_size(1, NUM_THREADS);
     dim3 grid_size(X_DIM, X_DIM);
