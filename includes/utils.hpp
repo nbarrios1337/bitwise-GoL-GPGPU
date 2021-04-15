@@ -2,22 +2,25 @@
 #define _UTIL_H
 
 #include <cstdint>
-#ifdef __NVCC__
-#include <cuda_runtime.h>
-#endif
 #include <iostream>
+
+#ifdef __NVCC__
+
+#include <cuda_runtime.h>
+#define cuda __host__ __device__
+
+#else
+
+#define cuda
+
+#endif
 
 /* mask = 1 << pos;
  * masked = num & mask;
  * bit = masked >> pos
  */
 
-template <typename T>
-#ifdef __NVCC__
-__device__
-#endif
-    inline T
-    getBit(T num, short pos) {
+template <typename T> cuda inline T getBit(T num, short pos) {
     return (num & (1 << pos)) >> pos;
 }
 
@@ -25,12 +28,7 @@ __device__
  * set = num | mask
  */
 
-template <typename T>
-#ifdef __NVCC__
-__device__
-#endif
-    inline T
-    setBit(T num, short pos) {
+template <typename T> cuda inline T setBit(T num, short pos) {
     return num | (1 << pos);
 }
 
@@ -38,12 +36,7 @@ __device__
  * unset = num & mask
  */
 
-template <typename T>
-#ifdef __NVCC__
-__device__
-#endif
-    inline T
-    unsetBit(T num, short pos) {
+template <typename T> cuda inline T unsetBit(T num, short pos) {
     return num & (~(1 << pos));
 }
 
