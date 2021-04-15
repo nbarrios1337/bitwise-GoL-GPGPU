@@ -3,7 +3,8 @@
 #include <iostream>
 #include <random>
 
-#define SIZE 1 << 6
+#define SIZE 1 << 10
+#define ITERATIONS 1024
 
 // (SIZE / 4) by SIZE elements
 // plus border of zeroes
@@ -236,6 +237,12 @@ int main() {
     uint32_t *tmpGrid = NULL;
     uint32_t *out = NULL;
 
+    // See
+    // https://developer.nvidia.com/blog/how-implement-performance-metrics-cuda-cc/
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
     cudaMallocManaged(&grid, TOTAL_INTS * sizeof(uint32_t));
     cudaMallocManaged(&tmpGrid, TOTAL_INTS * sizeof(uint32_t));
     cudaMallocManaged(&out, sizeof(uint32_t));
@@ -258,29 +265,36 @@ int main() {
     dim3 grid_size_gRows(1);
     dim3 block_size_gRows(X_DIM + 2);
 
+    cudaEventRecord(start);
+
 #ifdef DEBUG
     std::cout << "block_size: " << block_size << std::endl;
     std::cout << "grid_size: " << grid_size << std::endl;
 #endif
 
+    for (int i = 0; i < ITERATIONS; i++) {
 #ifdef DEBUG
-    std::cout << "Calling ghost_columns<<<" << grid_size_gCols << ", "
-              << block_size_gCols << ">>>" << std::endl;
+        std::cout << "Calling ghost_columns<<<" << grid_size_gCols << ", "
+                  << block_size_gCols << ">>>" << std::endl;
 #endif
-    ghost_columns<<<grid_size_gCols, block_size_gCols>>>(grid);
+        ghost_columns<<<grid_size_gCols, block_size_gCols>>>(grid);
 
 #ifdef DEBUG
-    std::cout << "Calling ghost_rows<<<" << grid_size_gRows << ", "
-              << block_size_gRows << ">>>" << std::endl;
+        std::cout << "Calling ghost_rows<<<" << grid_size_gRows << ", "
+                  << block_size_gRows << ">>>" << std::endl;
 #endif
-    ghost_rows<<<grid_size_gRows, block_size_gRows>>>(grid);
+        ghost_rows<<<grid_size_gRows, block_size_gRows>>>(grid);
 
 #ifdef DEBUG
-    std::cout << "Calling simulate<<<" << grid_size << ", " << block_size
-              << ">>>" << std::endl;
+        std::cout << "Calling simulate<<<" << grid_size << ", " << block_size
+                  << ">>>" << std::endl;
 #endif
 
-    simulate<<<grid_size, block_size>>>(grid);
+        simulate<<<grid_size, block_size>>>(grid);
+    }
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
 
     // CALL THIS BEFORE ANY DEVICE -> HOST MEM ACCESS
     cudaDeviceSynchronize();
@@ -301,10 +315,10 @@ int main() {
     for (int i = 1; i < Y_DIM + 1; i++) {
         for (int j = 1; j < X_DIM + 1; j++) {
             auto val = std::bitset<32>(grid[i * (X_DIM + 2) + j]);
-            std::cout << val << ' ';
+            // std::cout << val << ' ';
             sum += val.count();
         }
-        std::cout << std::endl;
+        // std::cout << std::endl;
     }
 #endif
 
@@ -334,6 +348,11 @@ int main() {
 #else
     std::cout << sum << std::endl;
 #endif
+
+    float ms = 0;
+    cudaEventElapsedTime(&ms, start, stop);
+
+    std::cout << "ElapsedTime: " << ms << " ms" << std::endl;
 
     cudaFree(grid);
     cudaFree(tmpGrid);
