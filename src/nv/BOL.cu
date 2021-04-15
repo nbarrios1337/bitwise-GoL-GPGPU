@@ -234,14 +234,18 @@ int main() {
 
     uint32_t *grid = NULL;
     uint32_t *tmpGrid = NULL;
-    uint32_t *out = NULL;
 
     cudaMallocManaged(&grid, TOTAL_INTS * sizeof(uint32_t));
     cudaMallocManaged(&tmpGrid, TOTAL_INTS * sizeof(uint32_t));
-    cudaMallocManaged(&out, sizeof(uint32_t));
 
     // init on host
     init_grid(grid);
+
+    // See https://developer.nvidia.com/blog/unified-memory-cuda-beginners/
+    // Prefetches the host-initialized mem onto the device
+    int device = -1;
+    cudaGetDevice(&device);
+    cudaMemPrefetchAsync(grid, TOTAL_INTS * sizeof(uint32_t), device, NULL);
 
     // Adapted from ORNL
     dim3 block_size(1, NUM_THREADS);
@@ -332,7 +336,6 @@ int main() {
 
     cudaFree(grid);
     cudaFree(tmpGrid);
-    cudaFree(out);
 
     return 0;
 }
