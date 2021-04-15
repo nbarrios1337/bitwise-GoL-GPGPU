@@ -2,14 +2,15 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
-#include "compute.hpp"
+#include "bitwise.hpp"
+#include <chrono>
 #define SRAND_VALUE 1985
 
 // Linear game grid dimension
-int x_dim = 1;
+int x_dim = 32;
 int y_dim = x_dim * 32;
 // Number of game iterations
-int maxIter = 1;
+int maxIter = 1024;
 
 void get_bitsets(uint32_t *bitsets, uint64_t top, uint64_t center,
                  uint64_t bottom) {
@@ -149,7 +150,11 @@ int main() {
 
   uint32_t *bitsets = (uint32_t *)calloc(9, sizeof(uint32_t *)); //put this on the stack not heap
   uint32_t *out = (uint32_t *)calloc(1, sizeof(uint32_t *)); //also should be on the stack
-
+  using std::chrono::high_resolution_clock;
+  using std::chrono::duration_cast;
+  using std::chrono::duration;
+  using std::chrono::milliseconds;
+  auto t1 = high_resolution_clock::now();
   // Main game loop
   for (int iter = 0; iter < maxIter; iter++) {
     // Left-Right columns
@@ -205,7 +210,9 @@ int main() {
     grid = newGrid;
     newGrid = tmpGrid;
   } // End main game loop
-
+  auto t2 = high_resolution_clock::now();
+  duration<double, std::milli> ms_double = t2 - t1;
+  std::cout << ms_double.count() << "ms" << std::endl;
   free(bitsets);
   free(out);
 
@@ -214,7 +221,7 @@ int main() {
     for (int j = 1; j <= x_dim; j++) {
       std::bitset<32> cells (grid[i * (x_dim + 2) + j]);
       count += cells.count();
-      std::cout << cells << std::endl;
+      //std::cout << cells << std::endl;
     }
   }
   std::cout << count << std::endl;
