@@ -97,6 +97,10 @@ nv_%: bin/nv_%
 			$(SCRIPT) $^
 endif
 
+# ~~~ Benchmark Rules ~~~
+bench_%: bin/%
+	python3 benchmark.py $^ > output/$@
+
 clean:
 	rm -vf bin/* output/*
 
