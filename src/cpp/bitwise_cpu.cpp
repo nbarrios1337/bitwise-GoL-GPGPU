@@ -212,7 +212,7 @@ int main() {
   } // End main game loop
   auto t2 = high_resolution_clock::now();
   duration<double, std::milli> ms_double = t2 - t1;
-  std::cout << ms_double.count() << "ms" << std::endl;
+  std::cout << "Time: " << ms_double.count() << " ms" << std::endl;
   free(bitsets);
   free(out);
 
@@ -224,7 +224,7 @@ int main() {
       //std::cout << cells << std::endl;
     }
   }
-  std::cout << count << std::endl;
+  // std::cout << count << std::endl;
   free(grid);
   free(newGrid);
   return 0;

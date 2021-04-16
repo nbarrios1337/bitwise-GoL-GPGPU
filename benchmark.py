@@ -12,7 +12,7 @@ filename = sys.argv[1]
 cproc = subprocess.run(filename, capture_output=True, text=True)
 out = cproc.stdout
 time = float(out.splitlines()[-1].split(' ')[1])
-print("One run will take at most", time, file=sys.stderr)
+print("One run will take at most", (time)/1000, "seconds", file=sys.stderr)
 print("Est. Completion Time (seconds):", (time*10)/1000, file=sys.stderr)
 
 # benchmark

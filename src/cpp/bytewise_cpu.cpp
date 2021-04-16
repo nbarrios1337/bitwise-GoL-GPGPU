@@ -17,7 +17,7 @@ int getNeighbors(int** grid, int i, int j)
     return numNeighbors;
 }
 
-int main(int argc, char* argv[])
+int main()
 {
     int i,j,iter;
     // Linear game grid dimension
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     }// End main game loop
     auto t2 = high_resolution_clock::now();
     duration<double, std::milli> ms_double = t2 - t1;
-    std::cout << ms_double.count() << "ms" << std::endl;
+    std::cout << "Time: " << ms_double.count() << " ms" << std::endl;
     // Sum up alive cells and print results
     int total = 0;
     for (i = 1; i<=dim; i++) {
@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
             total += grid[i][j];
         }
     }
-    printf("Total Alive: %d\n", total);
+    //printf("Total Alive: %d\n", total);
 
     // Release memory
     free(grid);
