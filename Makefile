@@ -101,6 +101,24 @@ endif
 bench_%: bin/%
 	python3 benchmark.py $^ > output/$@
 
+# gld_requested_throughput:  Requested global memory load throughput
+# gst_requested_throughput:  Requested global memory store throughput
+# gld_throughput:  Global memory load throughput
+# gst_throughput:  Global memory store throughput
+# gld_efficiency:  Ratio of requested global memory load throughput to required global memory load throughput expressed as percentage.
+# gst_efficiency:  Ratio of requested global memory store throughput to required global memory store throughput expressed as percentage.
+# inst_executed:  The number of instructions executed
+# inst_issued:  The number of instructions issued
+# ipc:  Instructions executed per cycle
+# issued_ipc:  Instructions issued per cycle
+# inst_per_warp:  Average number of instructions executed by each warp
+
+
+METRICS := gld_requested_throughput gst_requested_throughput gld_throughput gst_throughput gld_efficiency gst_efficiency inst_executed inst_issued ipc issued_ipc inst_per_warp
+# 	--metrics $(subst $(SPACE),$(COMMA),$(METRICS))
+profile_% : bin/%
+	sudo nvprof --log-file output/$@ --metrics $(subst $(SPACE),$(COMMA),$(METRICS)) $^
+
 clean:
 	rm -vf bin/* output/*
 

@@ -4,9 +4,9 @@
 #include <random>
 
 #define SIZE 1 << 10
-#define ITERATIONS 1024
+#define ITERATIONS 100
 
-// (SIZE / 4) by SIZE elements
+// (SIZE / 32) by SIZE elements
 // plus border of zeroes
 #define Y_DIM (SIZE)
 #define X_DIM (SIZE >> 5)
@@ -120,8 +120,8 @@ __global__ void ghost_rows(uint32_t *g) {
 
     int index = blockDim.x * blockIdx.x + threadIdx.x;
 
-    int bottom = (Y_DIM + 1) * (X_DIM + 2) + index;
-    int top = 0 * (X_DIM + 2) + index;
+    uint64_t bottom = uint64_t(Y_DIM + 1) * uint64_t(X_DIM + 2) + index;
+    uint64_t top = 0 * uint64_t(X_DIM + 2) + index;
 
 #ifdef DEBUG
     printf("[rows] Blk: (%d,%d) Thread: (%d,%d) -> Col = (%d)\n", blockIdx.x,
@@ -235,7 +235,6 @@ int main() {
 
     uint32_t *grid = NULL;
     uint32_t *tmpGrid = NULL;
-    uint32_t *out = NULL;
 
     // See
     // https://developer.nvidia.com/blog/how-implement-performance-metrics-cuda-cc/
@@ -243,9 +242,9 @@ int main() {
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    cudaMallocManaged(&grid, TOTAL_INTS * sizeof(uint32_t));
-    cudaMallocManaged(&tmpGrid, TOTAL_INTS * sizeof(uint32_t));
-    cudaMallocManaged(&out, sizeof(uint32_t));
+    uint64_t total_bytes = uint64_t(X_DIM + 2) * uint64_t(Y_DIM + 2) * sizeof(uint32_t);
+    cudaMallocManaged(&grid, total_bytes);
+    cudaMallocManaged(&tmpGrid, total_bytes);
 
     // init on host
     init_grid(grid);
@@ -253,7 +252,7 @@ int main() {
     // See https://developer.nvidia.com/blog/unified-memory-cuda-beginners/
     int device = -1;
     cudaGetDevice(&device);
-    cudaMemPrefetchAsync(grid, TOTAL_INTS * sizeof(uint32_t), device);
+    cudaMemPrefetchAsync(grid, total_bytes, device);
 
     // Adapted from ORNL
     dim3 block_size(1, NUM_THREADS);
@@ -356,7 +355,6 @@ int main() {
 
     cudaFree(grid);
     cudaFree(tmpGrid);
-    cudaFree(out);
 
     return 0;
 }
