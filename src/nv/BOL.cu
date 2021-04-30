@@ -242,12 +242,22 @@ int main() {
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    uint64_t total_bytes = uint64_t(X_DIM + 2) * uint64_t(Y_DIM + 2) * sizeof(uint32_t);
+    uint64_t total_bytes =
+        uint64_t(X_DIM + 2) * uint64_t(Y_DIM + 2) * sizeof(uint32_t);
     cudaMallocManaged(&grid, total_bytes);
     cudaMallocManaged(&tmpGrid, total_bytes);
 
     // init on host
     init_grid(grid);
+
+    std::cout << "Before" << std::endl;
+    for (int i = 1; i < Y_DIM + 1; i++) {
+        for (int j = 1; j < X_DIM + 1; j++) {
+            auto val = std::bitset<32>(grid[i * (X_DIM + 2) + j]);
+            std::cout << val << ' ';
+        }
+        std::cout << std::endl;
+    }
 
     // See https://developer.nvidia.com/blog/unified-memory-cuda-beginners/
     int device = -1;
@@ -311,13 +321,14 @@ int main() {
     }
 #else
     int sum = 0;
+    std::cout << "After" << std::endl;
     for (int i = 1; i < Y_DIM + 1; i++) {
         for (int j = 1; j < X_DIM + 1; j++) {
             auto val = std::bitset<32>(grid[i * (X_DIM + 2) + j]);
-            // std::cout << val << ' ';
+            std::cout << val << ' ';
             sum += val.count();
         }
-        // std::cout << std::endl;
+        std::cout << std::endl;
     }
 #endif
 

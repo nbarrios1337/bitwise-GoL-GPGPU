@@ -149,6 +149,14 @@ int main() {
     }
   }
 
+  printf("Before\n");
+  for (i = 1; i <= dim; i++) {
+    for (j = 1; j <= dim; j++) {
+      printf("%d", h_grid[i * (dim + 2) + j]);
+    }
+    printf("\n");
+  }
+
   // See
   // https://developer.nvidia.com/blog/how-implement-performance-metrics-cuda-cc/
   cudaEvent_t start, stop;
@@ -191,12 +199,13 @@ int main() {
 
   // Sum up alive cells and print results
   int total = 0;
+  printf("After\n");
   for (i = 1; i <= dim; i++) {
     for (j = 1; j <= dim; j++) {
-      //printf("%d", h_grid[i * (dim + 2) + j]);
+      printf("%d", h_grid[i * (dim + 2) + j]);
       total += h_grid[i * (dim + 2) + j];
     }
-    //printf("\n");
+    printf("\n");
   }
   printf("Total Alive: %d\n", total);
 
