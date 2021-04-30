@@ -112,9 +112,12 @@ bench_%: bin/%
 # ipc:  Instructions executed per cycle
 # issued_ipc:  Instructions issued per cycle
 # inst_per_warp:  Average number of instructions executed by each warp
+# achieved_occupancy:  Ratio of the average active warps per active cycle to the maximum number of warps supported on a multiprocessor
 
 
-METRICS := gld_requested_throughput gst_requested_throughput gld_throughput gst_throughput gld_efficiency gst_efficiency inst_executed inst_issued ipc issued_ipc inst_per_warp
+METRICS := gld_requested_throughput gst_requested_throughput gld_throughput gst_throughput gld_efficiency gst_efficiency \
+		inst_executed inst_issued ipc issued_ipc inst_per_warp \
+		achieved_occupancy
 # 	--metrics $(subst $(SPACE),$(COMMA),$(METRICS))
 profile_% : bin/%
 	sudo nvprof --log-file output/$@ --metrics $(subst $(SPACE),$(COMMA),$(METRICS)) $^
