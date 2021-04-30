@@ -180,25 +180,36 @@ __global__ void simulate(uint32_t *g) {
 
     // g[index] = 255;
 #else
+    // Each block is called with 32 vertical threads
+    // where each thread can store its respective datum
+    // and its adjacent integers.
+    __shared__ uint32_t shared_data[NUM_THREADS][3];
+
     // Get surrounding ints and then compute
     int top_index = (iy - 1) * (X_DIM + 2) + ix;
     int bottom_index = (iy + 1) * (X_DIM + 2) + ix;
 
+    shared_data[threadIdx.y][0] = g[index - 1]; // left
+    shared_data[threadIdx.y][1] = g[index];     // center
+    shared_data[threadIdx.y][2] = g[index + 1]; // right
+
+    __syncthreads();
+
     // make space for the LSB from the next number over's MSB
-    uint64_t top_num = g[top_index] << 1;
-    uint64_t center_num = g[index] << 1;
-    uint64_t bottom_num = g[bottom_index] << 1;
+    uint64_t top_num = uint64_t(shared_data[top_index][1]) << 1;
+    uint64_t center_num = uint64_t(shared_data[index][1]) << 1;
+    uint64_t bottom_num = uint64_t(shared_data[bottom_index][1]) << 1;
 
     // since we shift in a 0, xor will set the LSB to
     // the bit from the next's MSB. See XOR truth table
-    top_num ^= getBit(g[top_index + 1], 31);
-    center_num ^= getBit(g[index + 1], 31);
-    bottom_num ^= getBit(g[bottom_index + 1], 31);
+    top_num ^= getBit(shared_data[top_index][2], 31);
+    center_num ^= getBit(shared_data[index][2], 31);
+    bottom_num ^= getBit(shared_data[bottom_index][2], 31);
 
     // explicitly specify type in order to avoid shifting out all bits
-    top_num ^= getBit<uint64_t>(g[top_index - 1], 0) << 32;
-    center_num ^= getBit<uint64_t>(g[index - 1], 0) << 32;
-    bottom_num ^= getBit<uint64_t>(g[bottom_index - 1], 0) << 32;
+    top_num ^= getBit<uint64_t>(shared_data[top_index][0], 0) << 32;
+    center_num ^= getBit<uint64_t>(shared_data[index][0], 0) << 32;
+    bottom_num ^= getBit<uint64_t>(shared_data[bottom_index][0], 0) << 32;
 
     g[index] = compute63(top_num, center_num, bottom_num);
 #endif
