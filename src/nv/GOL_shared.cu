@@ -100,6 +100,14 @@ int main() {
         }
     }
 
+/*     printf("Before\n");
+    for (i = 1; i <= dim; i++) {
+        for (j = 1; j <= dim; j++) {
+            printf("%d", h_grid[i * (dim + 2) + j]);
+        }
+        printf("\n");
+    } */
+
     cudaFuncSetCacheConfig(GOL, cudaFuncCachePreferShared);
 
     // Copy over initial game grid (Dim-1 threads)
@@ -159,6 +167,15 @@ int main() {
         printf("\n");
 #endif
     }
+
+/*     printf("After\n");
+    for (i = 1; i <= dim; i++) {
+        for (j = 1; j <= dim; j++) {
+            printf("%d", h_grid[i * (dim + 2) + j]);
+        }
+        printf("\n");
+    } */
+
     printf("Total Alive: %d\n", total);
 
     cudaFree(d_grid);
