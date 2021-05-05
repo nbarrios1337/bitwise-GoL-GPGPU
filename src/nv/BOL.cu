@@ -210,12 +210,6 @@ __global__ void simulate(uint32_t *g) {
 
     __syncthreads();
 
-/*     printf("[simulate] Blk: (%d,%d) Thrd: (%d,%d) -> shared i = %d (after "
-           "shared init)\n\t"
-           "Shared [%d]\n\tGlobal [%d]\n",
-           blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, threadIdx.y + 1,
-           shared_data[threadIdx.y][1], g[gi_center]); */
-
     // make space for the LSB from the next number over's MSB
     uint64_t top_num = uint64_t(shared_data[s_index - 1][1]) << 1;
     uint64_t center_num = uint64_t(shared_data[s_index][1]) << 1;
@@ -235,11 +229,6 @@ __global__ void simulate(uint32_t *g) {
     shared_data[s_index][1] = compute63(top_num, center_num, bottom_num);
     // could write directly to global...
     __syncthreads();
-
-/*     printf("[simulate] Blk: (%d,%d) Thrd: (%d,%d) -> (after compute)\n\t"
-           "Shared [%d]\n\tGlobal [%d]\n",
-           blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y,
-           shared_data[s_index][1], g[gi_center]); */
 
     g[gi_center] = shared_data[s_index][1];
 #endif
@@ -290,15 +279,6 @@ int main() {
 
     // init on host
     init_grid(grid);
-
-/*     std::cout << "Before" << std::endl;
-    for (int i = 1; i < Y_DIM + 1; i++) {
-        for (int j = 1; j < X_DIM + 1; j++) {
-            auto val = std::bitset<32>(grid[i * (X_DIM + 2) + j]);
-            std::cout << val << ' ';
-        }
-        std::cout << std::endl;
-    } */
 
     // See https://developer.nvidia.com/blog/unified-memory-cuda-beginners/
     int device = -1;
@@ -362,14 +342,13 @@ int main() {
     }
 #else
     int sum = 0;
-    //std::cout << "After" << std::endl;
     for (int i = 1; i < Y_DIM + 1; i++) {
         for (int j = 1; j < X_DIM + 1; j++) {
             auto val = std::bitset<32>(grid[i * (X_DIM + 2) + j]);
-            //std::cout << val << ' ';
+            // std::cout << val << ' ';
             sum += val.count();
         }
-        //std::cout << std::endl;
+        // std::cout << std::endl;
     }
 #endif
 
