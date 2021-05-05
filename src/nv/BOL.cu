@@ -3,7 +3,7 @@
 #include <iostream>
 #include <random>
 
-#define SIZE 1 << 10
+#define SIZE 1 << 12
 #define ITERATIONS 100
 
 // (SIZE / 32) by SIZE elements
@@ -291,14 +291,14 @@ int main() {
     // init on host
     init_grid(grid);
 
-    std::cout << "Before" << std::endl;
+/*     std::cout << "Before" << std::endl;
     for (int i = 1; i < Y_DIM + 1; i++) {
         for (int j = 1; j < X_DIM + 1; j++) {
             auto val = std::bitset<32>(grid[i * (X_DIM + 2) + j]);
             std::cout << val << ' ';
         }
         std::cout << std::endl;
-    }
+    } */
 
     // See https://developer.nvidia.com/blog/unified-memory-cuda-beginners/
     int device = -1;
@@ -362,14 +362,14 @@ int main() {
     }
 #else
     int sum = 0;
-    std::cout << "After" << std::endl;
+    //std::cout << "After" << std::endl;
     for (int i = 1; i < Y_DIM + 1; i++) {
         for (int j = 1; j < X_DIM + 1; j++) {
             auto val = std::bitset<32>(grid[i * (X_DIM + 2) + j]);
-            std::cout << val << ' ';
+            //std::cout << val << ' ';
             sum += val.count();
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
     }
 #endif
 

@@ -98,6 +98,7 @@ nv_%: bin/nv_%
 endif
 
 # ~~~ Benchmark Rules ~~~
+bench_nv_GOL: src/nv/GOL.cu
 bench_%: bin/%
 	python3 benchmark.py $^ > output/$@
 
@@ -113,14 +114,26 @@ bench_%: bin/%
 # issued_ipc:  Instructions issued per cycle
 # inst_per_warp:  Average number of instructions executed by each warp
 # achieved_occupancy:  Ratio of the average active warps per active cycle to the maximum number of warps supported on a multiprocessor
-
+# inst_integer:  Number of integer instructions executed by non-predicated threads
 
 METRICS := gld_requested_throughput gst_requested_throughput gld_throughput gst_throughput gld_efficiency gst_efficiency \
 		inst_executed inst_issued ipc issued_ipc inst_per_warp \
-		achieved_occupancy
+		achieved_occupancy inst_integer
 # 	--metrics $(subst $(SPACE),$(COMMA),$(METRICS))
-profile_% : bin/%
-	sudo nvprof --log-file output/$@ --metrics $(subst $(SPACE),$(COMMA),$(METRICS)) $^
+
+MAIN_FUNC := na
+profile_nv_GOL profile_nv_GOL_shared: MAIN_FUNC = GOL
+profile_nv_BOL: MAIN_FUNC = simulate
+
+output/profile_% : bin/%
+	sudo nvprof --csv --log-file $@ --metrics $(subst $(SPACE),$(COMMA),$(METRICS)) $^
+
+
+profile_% : output/profile_% 
+	grep $(MAIN_FUNC) $^ | cut -d',' -f2,5,8 > $^.csv
+	cut -d',' -f3 $^.csv
+
+
 
 clean:
 	rm -vf bin/* output/*
@@ -130,4 +143,4 @@ cancel:
 
 # Necessary to keep the binaries after using the
 # bin/nv_% rule as an intermediate rule
-.PRECIOUS: bin/nv_% bin/cpp_%
+.PRECIOUS: bin/nv_% bin/cpp_% output/profile_%

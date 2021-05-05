@@ -127,9 +127,9 @@ int main() {
   uint32_t *d_tmpGrid; // tmp grid pointer used to switch between grid and
                     // newGrid
 
-  uint dim = 1024; // Linear dimension of our grid - not counting ghost cells
+  uint dim = 1 << 12; // Linear dimension of our grid - not counting ghost cells
   // reduce to like 1<<4 or 1<<5 to run it reasonably on Pascal 1060
-  uint maxIter = 1 << 10; // Number of game steps
+  uint maxIter = 100; // Number of game steps
 
   size_t bytes =
       sizeof(int) * (dim + 2) *
@@ -149,13 +149,13 @@ int main() {
     }
   }
 
-  printf("Before\n");
-  for (i = 1; i <= dim; i++) {
-    for (j = 1; j <= dim; j++) {
-      printf("%d", h_grid[i * (dim + 2) + j]);
-    }
-    printf("\n");
-  }
+  // printf("Before\n");
+  // for (i = 1; i <= dim; i++) {
+  //   for (j = 1; j <= dim; j++) {
+  //     printf("%d", h_grid[i * (dim + 2) + j]);
+  //   }
+  //   printf("\n");
+  // }
 
   // See
   // https://developer.nvidia.com/blog/how-implement-performance-metrics-cuda-cc/
@@ -190,6 +190,10 @@ int main() {
 
   cudaEventRecord(stop);
 
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess)
+    printf("CUDA error %s\n", cudaGetErrorString(error));
+
   // Copy back results and sum
   cudaMemcpy(h_grid, d_grid, bytes, cudaMemcpyDeviceToHost);
 
@@ -199,13 +203,13 @@ int main() {
 
   // Sum up alive cells and print results
   int total = 0;
-  printf("After\n");
+  //printf("After\n");
   for (i = 1; i <= dim; i++) {
     for (j = 1; j <= dim; j++) {
-      printf("%d", h_grid[i * (dim + 2) + j]);
+      //printf("%d", h_grid[i * (dim + 2) + j]);
       total += h_grid[i * (dim + 2) + j];
     }
-    printf("\n");
+    //printf("\n");
   }
   printf("Total Alive: %d\n", total);
 

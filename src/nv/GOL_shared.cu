@@ -81,8 +81,8 @@ int main() {
     int *d_newGrid; // Second grid used on device only
     int *d_tmpGrid; // tmp grid pointer used to switch between grid and newGrid
 
-    int dim = 1 << 5; // Linear dimension of our grid - not counting ghost cells
-    int maxIter = 1 << 10; // Number of game steps
+    int dim = 1 << 13; // Linear dimension of our grid - not counting ghost cells
+    int maxIter = 100; // Number of game steps
 
     size_t bytes = sizeof(int) * (dim + 2) * (dim + 2);
     // Allocate host Grid used for initial setup and read back from device
@@ -107,6 +107,12 @@ int main() {
         }
         printf("\n");
     } */
+
+    // See
+    // https://developer.nvidia.com/blog/how-implement-performance-metrics-cuda-cc/
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
 
     cudaFuncSetCacheConfig(GOL, cudaFuncCachePreferShared);
 
@@ -134,6 +140,7 @@ int main() {
     printf("cpyGridColsGridSize: { %d %d %d }\n", cpyGridColsGridSize.x,
            cpyGridColsGridSize.y, cpyGridColsGridSize.z);
 #endif
+    cudaEventRecord(start);
     // Main game loop
     for (iter = 0; iter < maxIter; iter++) {
 
@@ -147,12 +154,18 @@ int main() {
         d_newGrid = d_tmpGrid;
     } // iter loop
 
+    cudaEventRecord(stop);
+
     cudaError_t error = cudaGetLastError();
     if (error != cudaSuccess)
         printf("CUDA error %s\n", cudaGetErrorString(error));
 
     // Copy back results and sum
     cudaMemcpy(h_grid, d_grid, bytes, cudaMemcpyDeviceToHost);
+
+    cudaEventSynchronize(stop);
+
+    cudaDeviceSynchronize();
 
     // Sum up alive cells and print results
     int total = 0;
@@ -177,6 +190,11 @@ int main() {
     } */
 
     printf("Total Alive: %d\n", total);
+
+    float ms = 0;
+    cudaEventElapsedTime(&ms, start, stop);
+
+    printf("ElapsedTime: %f ms\n", ms);
 
     cudaFree(d_grid);
     cudaFree(d_newGrid);
