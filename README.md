@@ -25,7 +25,7 @@ switches the BOL program to simply print out what each CUDA thread block would a
 When it comes to benchmarking and profiling, those rules extend the `nv_` and `cpp_` naming scheme. For example, to profile the program that was compiled and run by the `make nv_BOL` rule, we'd do `make bench_nv_BOL` and `make profile_nv_BOL`.
 
 ## Contributing
-We're more than happyto accept issues and pull requests! Response Time might be delayed as another coursework take priority later on.
+We're more than happy to accept issues and pull requests! Response time might be delayed as another coursework take priority later on.
 
 ## References
 1. Fujita, Toru, et al. “Efficient GPU Implementations for the Conways Game of Life.” 2015 Third International Symposium on Computing and Networking (CANDAR), Dec. 2015, [doi:10.1109/candar.2015.11](https://ieeexplore.ieee.org/abstract/document/7424264).
