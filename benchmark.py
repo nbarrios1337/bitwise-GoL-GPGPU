@@ -12,10 +12,15 @@ filename = sys.argv[1]
 # warm-up
 cproc = subprocess.run(filename, capture_output=True, text=True)
 out = cproc.stdout
+
+# Get Est. Time
+# Requires that the measurement be printed on the last line of output
 time = float(out.splitlines()[-1].split(' ')[1])
 secs, ms = divmod(time*10, 1000)
+
 print("One run will take at most", (time)/1000, "seconds", file=sys.stderr)
 print("Time to Complete (seconds):", (time*10)/1000, file=sys.stderr)
+
 dt = datetime.datetime.now() + datetime.timedelta(seconds=secs, milliseconds=ms)
 print("Current Time", datetime.datetime.now(), file=sys.stderr)
 print("Est. Completion Time:", dt.time(), file=sys.stderr)

@@ -2,6 +2,9 @@
 #include <cstdint>
 #include <cuda_runtime.h>
 
+// Copy/Pasted code from BOL and GOL
+// Ideally, we'd redefined BOL and GOL to be callable functions
+
 // BOL Stuff
 #define SIZE 1 << 5
 
