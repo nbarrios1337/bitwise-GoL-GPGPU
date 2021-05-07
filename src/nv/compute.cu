@@ -128,7 +128,3 @@ uint32_t wrapper(uint64_t t, uint64_t m, uint64_t b) {
 
     return retVal;
 }
-
-// TODO Ideally we want the getting of bitsets and the computation of
-// the bitwise sums to be in a single function to remove the need for
-// array indexing
