@@ -3,7 +3,7 @@
 #include <iostream>
 #include <random>
 
-#define SIZE 1 << 10
+#define SIZE 1 << 12
 #define ITERATIONS 100
 
 // (SIZE / 32) by SIZE elements
@@ -169,7 +169,11 @@ __global__ void ghost_columns(uint32_t *g) {
 __global__ void simulate(uint32_t *g) {
     int iy = blockDim.y * blockIdx.y + threadIdx.y + 1;
     int ix = blockDim.x * blockIdx.x + threadIdx.x + 1;
-    int index = iy * (X_DIM + 2) + ix;
+
+    int gi_top = (iy - 1) * (X_DIM + 2) + ix;
+    int gi_center = iy * (X_DIM + 2) + ix;
+    int gi_bottom = (iy + 1) * (X_DIM + 2) + ix;
+
 #ifdef DEBUG
     // printf("index: %d (%d * %d, %d)\n", index, iy, (X_DIM + 2), ix);
     printf("[simulate] Blk: (%d,%d) Thread: (%d,%d) -> Row/Col = "
@@ -180,27 +184,53 @@ __global__ void simulate(uint32_t *g) {
 
     // g[index] = 255;
 #else
+    // Each block is called with 32 vertical threads
+    // where each thread can store its respective datum
+    // and its adjacent integers.
+    // Buffer necessary for edges
+    __shared__ uint32_t shared_data[NUM_THREADS + 2][3];
+    uint32_t s_index = threadIdx.y + 1;
+
     // Get surrounding ints and then compute
-    int top_index = (iy - 1) * (X_DIM + 2) + ix;
-    int bottom_index = (iy + 1) * (X_DIM + 2) + ix;
+    if (threadIdx.y == 0) {
+        shared_data[0][0] = g[gi_top - 1];
+        shared_data[0][1] = g[gi_top];
+        shared_data[0][2] = g[gi_top + 1];
+    }
+
+    if (threadIdx.y == NUM_THREADS - 1) {
+        shared_data[NUM_THREADS + 1][0] = g[gi_bottom - 1];
+        shared_data[NUM_THREADS + 1][1] = g[gi_bottom];
+        shared_data[NUM_THREADS + 1][2] = g[gi_bottom + 1];
+    }
+
+    shared_data[s_index][0] = g[gi_center - 1]; // left
+    shared_data[s_index][1] = g[gi_center];     // center
+    shared_data[s_index][2] = g[gi_center + 1]; // right
+
+    __syncthreads();
 
     // make space for the LSB from the next number over's MSB
-    uint64_t top_num = g[top_index] << 1;
-    uint64_t center_num = g[index] << 1;
-    uint64_t bottom_num = g[bottom_index] << 1;
+    uint64_t top_num = uint64_t(shared_data[s_index - 1][1]) << 1;
+    uint64_t center_num = uint64_t(shared_data[s_index][1]) << 1;
+    uint64_t bottom_num = uint64_t(shared_data[s_index + 1][1]) << 1;
 
     // since we shift in a 0, xor will set the LSB to
     // the bit from the next's MSB. See XOR truth table
-    top_num ^= getBit(g[top_index + 1], 31);
-    center_num ^= getBit(g[index + 1], 31);
-    bottom_num ^= getBit(g[bottom_index + 1], 31);
+    top_num ^= getBit(shared_data[s_index - 1][2], 31);
+    center_num ^= getBit(shared_data[s_index][2], 31);
+    bottom_num ^= getBit(shared_data[s_index + 1][2], 31);
 
     // explicitly specify type in order to avoid shifting out all bits
-    top_num ^= getBit<uint64_t>(g[top_index - 1], 0) << 32;
-    center_num ^= getBit<uint64_t>(g[index - 1], 0) << 32;
-    bottom_num ^= getBit<uint64_t>(g[bottom_index - 1], 0) << 32;
+    top_num ^= getBit<uint64_t>(shared_data[s_index - 1][0], 0) << 32;
+    center_num ^= getBit<uint64_t>(shared_data[s_index][0], 0) << 32;
+    bottom_num ^= getBit<uint64_t>(shared_data[s_index + 1][0], 0) << 32;
 
-    g[index] = compute63(top_num, center_num, bottom_num);
+    shared_data[s_index][1] = compute63(top_num, center_num, bottom_num);
+    // could write directly to global...
+    __syncthreads();
+
+    g[gi_center] = shared_data[s_index][1];
 #endif
 }
 
@@ -242,7 +272,8 @@ int main() {
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    uint64_t total_bytes = uint64_t(X_DIM + 2) * uint64_t(Y_DIM + 2) * sizeof(uint32_t);
+    uint64_t total_bytes =
+        uint64_t(X_DIM + 2) * uint64_t(Y_DIM + 2) * sizeof(uint32_t);
     cudaMallocManaged(&grid, total_bytes);
     cudaMallocManaged(&tmpGrid, total_bytes);
 
