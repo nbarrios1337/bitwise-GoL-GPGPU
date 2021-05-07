@@ -14,15 +14,9 @@ endif
 
 NVCXX := nvcc
 CXXFLAGS := -Wall -Wextra -std=c++11
-NVFLAGS := -Werror=all-warnings -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70
+NVFLAGS := -Werror=all-warnings -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -rdc=true
 
 CLANG_EXISTS := $(shell command -v clang++ 2> /dev/null)
-
-# See https://llvm.org/docs/CompileCudaWithLLVM.html
-ifdef CLANG_EXISTS
-CXX := clang++
-BONUSFLAGS := --cuda-gpu-arch=sm_61 --cuda-gpu-arch=sm_70 -L/usr/lib/cuda -lcudart_static -ldl -lrt -pthread --cuda-path=/usr/lib/cuda
-endif
 
 ifeq ($(DEBUG), true)
 CXXFLAGS += -g -DDEBUG
@@ -39,13 +33,12 @@ COMMA := ,
 # the `sbatch` command is not found
 CCR := $(shell command -v sbatch 2> /dev/null)
 
-# ~~~ Specific Requirements ~~~
-bin/test_bitwise: src/cpp/bitwise.cpp
-
-bin/test_compute: src/nv/compute.cu
-
 # ~~~ Clangd Specific Rules ~~~
+# See https://llvm.org/docs/CompileCudaWithLLVM.html
 ifdef CLANG_EXISTS
+CXX := clang++
+BONUSFLAGS := --cuda-gpu-arch=sm_61 --cuda-gpu-arch=sm_70 -L/usr/lib/cuda -lcudart_static -ldl -lrt -pthread --cuda-path=/usr/lib/cuda
+
 BOL: src/nv/BOL.cu
 	$(CXX) $^ -o bin/nv_BOL -I$(INCLUDE_DIR) $(CXXFLAGS) $(BONUSFLAGS)
 
@@ -54,6 +47,11 @@ compile_commands.json:
 
 clangd: compile_commands.json
 endif
+
+# ~~~ Specific Requirements ~~~
+bin/test_bitwise: src/cpp/bitwise.cpp
+
+bin/test_compute: src/nv/compute.cu
 
 # ~~ Compilation Rules ~~~
 bin/nv_%: src/nv/%.cu
@@ -68,10 +66,7 @@ bin/cpp_%: src/cpp/%.cpp
 	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) -Xcompiler $(subst $(SPACE),$(COMMA),$(CXXFLAGS))
 
 # ~~~ Tests ~~~
-bin/test_%: tests/%.cpp
-	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) -Xcompiler $(subst $(SPACE),$(COMMA),$(CXXFLAGS))
-
-bin/test_%: tests/%.cu
+bin/test_%: tests/%.c*
 	$(NVCXX) $^ -o $@ -I$(INCLUDE_DIR) $(NVFLAGS) -Xcompiler $(subst $(SPACE),$(COMMA),$(CXXFLAGS))
 
 test: bin/cpp_bitwise_cpu bin/nv_BOL
@@ -128,12 +123,11 @@ profile_nv_BOL: MAIN_FUNC = simulate
 output/profile_% : bin/%
 	sudo nvprof --csv --log-file $@ --metrics $(subst $(SPACE),$(COMMA),$(METRICS)) $^
 
-
 profile_% : output/profile_% 
 	grep $(MAIN_FUNC) $^ | cut -d',' -f2,5,8 > $^.csv
 	cut -d',' -f3 $^.csv
 
-
+# END Profiling Rules
 
 clean:
 	rm -vf bin/* output/*
@@ -143,4 +137,4 @@ cancel:
 
 # Necessary to keep the binaries after using the
 # bin/nv_% rule as an intermediate rule
-.PRECIOUS: bin/nv_% bin/cpp_% output/profile_%
+.PRECIOUS: bin/nv_% bin/cpp_% bin/test_% output/profile_%
